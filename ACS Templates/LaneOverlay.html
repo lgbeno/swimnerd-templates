@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lane Overlay - 8 Lanes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Arial', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .lanes-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100vh;
+            padding: 20px 0;
+        }
+
+        .lane-box {
+            position: relative;
+            height: calc((100vh - 40px) / 8 - 8px);
+            margin: 4px 0;
+            overflow: hidden;
+        }
+
+        .lane-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            transform: scaleX(0);
+            transform-origin: left center;
+            opacity: 0;
+            transition: none;
+        }
+
+        .lane-content.visible {
+            animation: wipeIn 0.4s ease-out forwards;
+        }
+
+        .lane-content.hiding {
+            animation: wipeOut 0.3s ease-in forwards;
+        }
+
+        @keyframes wipeIn {
+            0% {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+            100% {
+                transform: scaleX(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes wipeOut {
+            0% {
+                transform: scaleX(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+        }
+
+
+        .lane-info {
+            display: flex;
+            flex: 1;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+        }
+
+        .place-indicator {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.7);
+            min-width: 80px;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .swimmer-name {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .final-time {
+            font-size: 2.8rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.7);
+            font-variant-numeric: tabular-nums;
+            min-width: 200px;
+            text-align: right;
+        }
+
+        /* First place highlight */
+        .lane-content.first-place {
+            background: rgba(255, 215, 0, 0.3);
+        }
+
+        .lane-content.first-place .swimmer-name,
+        .lane-content.first-place .final-time,
+        .lane-content.first-place .place-indicator {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Split time - right aligned, wipes from right */
+        .split-content {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            transform: scaleX(0);
+            transform-origin: right center;
+            opacity: 0;
+        }
+
+        .split-content.visible {
+            animation: wipeInRight 0.4s ease-out forwards;
+        }
+
+        .split-content.hiding {
+            animation: wipeOutRight 0.3s ease-in forwards;
+        }
+
+        @keyframes wipeInRight {
+            0% {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+            100% {
+                transform: scaleX(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes wipeOutRight {
+            0% {
+                transform: scaleX(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+        }
+
+        .split-time {
+            font-size: 2.8rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.7);
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body>
+    <div class="lanes-container">
+        <div class="lane-box" id="lane-8">
+            <div class="lane-content" id="laneContent-8">
+                <div class="place-indicator" id="place-8"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-8"></span>
+                    <span class="final-time" id="finalTime-8"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-8">
+                <span class="split-time" id="splitTime-8"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-7">
+            <div class="lane-content" id="laneContent-7">
+                <div class="place-indicator" id="place-7"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-7"></span>
+                    <span class="final-time" id="finalTime-7"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-7">
+                <span class="split-time" id="splitTime-7"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-6">
+            <div class="lane-content" id="laneContent-6">
+                <div class="place-indicator" id="place-6"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-6"></span>
+                    <span class="final-time" id="finalTime-6"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-6">
+                <span class="split-time" id="splitTime-6"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-5">
+            <div class="lane-content" id="laneContent-5">
+                <div class="place-indicator" id="place-5"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-5"></span>
+                    <span class="final-time" id="finalTime-5"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-5">
+                <span class="split-time" id="splitTime-5"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-4">
+            <div class="lane-content" id="laneContent-4">
+                <div class="place-indicator" id="place-4"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-4"></span>
+                    <span class="final-time" id="finalTime-4"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-4">
+                <span class="split-time" id="splitTime-4"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-3">
+            <div class="lane-content" id="laneContent-3">
+                <div class="place-indicator" id="place-3"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-3"></span>
+                    <span class="final-time" id="finalTime-3"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-3">
+                <span class="split-time" id="splitTime-3"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-2">
+            <div class="lane-content" id="laneContent-2">
+                <div class="place-indicator" id="place-2"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-2"></span>
+                    <span class="final-time" id="finalTime-2"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-2">
+                <span class="split-time" id="splitTime-2"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-1">
+            <div class="lane-content" id="laneContent-1">
+                <div class="place-indicator" id="place-1"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-1"></span>
+                    <span class="final-time" id="finalTime-1"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-1">
+                <span class="split-time" id="splitTime-1"></span>
+            </div>
+        </div>
+    </div>
+
+    <script id="swimmingScript" numberOfLanes="8">
+        const NUM_LANES = 8;
+        const SPLIT_DISPLAY_PERCENT = 0.4; // Show split for 40% of split time value
+
+        // Track lane visibility state
+        let laneVisibility = new Array(NUM_LANES).fill(false);
+        let splitVisibility = new Array(NUM_LANES).fill(false);
+        let splitTimeouts = new Array(NUM_LANES).fill(null);
+        let lastSplitValue = new Array(NUM_LANES).fill(null);
+
+        // BroadcastChannel for tab-to-tab communication (Simulator)
+        const channel = new BroadcastChannel('swimnerd-scoreboard');
+        channel.onmessage = function(e) {
+            console.log('BroadcastChannel data received');
+            processLaneData(e.data);
+        };
+
+        // WebSocket connection for production use
+        let client = null;
+        function connectWebSocket() {
+            try {
+                client = new WebSocket("ws://localhost:8080/");
+
+                client.onerror = function() {
+                    console.log('WebSocket Connection Error');
+                };
+
+                client.onopen = function() {
+                    console.log('WebSocket Client Connected');
+                };
+
+                client.onclose = function() {
+                    console.log('WebSocket Client Closed');
+                    // Retry connection after 3 seconds
+                    setTimeout(connectWebSocket, 3000);
+                };
+
+                client.onmessage = function(e) {
+                    const jsonData = JSON.parse(e.data);
+                    processLaneData(jsonData);
+                };
+            } catch (e) {
+                console.log('WebSocket not available, using BroadcastChannel only');
+            }
+        }
+        connectWebSocket();
+
+        function processLaneData(jsonData) {
+            for (let laneCounter = 0; laneCounter < NUM_LANES; laneCounter++) {
+                const laneNum = laneCounter + 1;
+                const laneData = jsonData.swimming.LaneAthleteTeam[laneCounter];
+                const laneContent = document.getElementById(`laneContent-${laneNum}`);
+                const swimmerName = document.getElementById(`swimmerName-${laneNum}`);
+                const finalTime = document.getElementById(`finalTime-${laneNum}`);
+                const placeIndicator = document.getElementById(`place-${laneNum}`);
+                const splitContent = document.getElementById(`splitContent-${laneNum}`);
+                const splitTime = document.getElementById(`splitTime-${laneNum}`);
+
+                // Check if lane has data
+                const hasData = laneData.LaneNumber.trim() !== "";
+                const hasFinalTime = laneData.FinalTime && laneData.FinalTime.trim() !== "";
+                const hasSplitTime = laneData.SplitTime &&
+                    laneData.SplitTime.trim() !== "" &&
+                    laneData.SplitTime.trim() !== ".";
+
+                // Show final time overlay (with name, place, time)
+                const shouldShowFinal = hasData && hasFinalTime;
+
+                if (shouldShowFinal) {
+                    // Update content
+                    swimmerName.textContent = laneData.AthleteName;
+                    finalTime.textContent = laneData.FinalTime;
+
+                    // Show place if available
+                    if (laneData.Place && laneData.Place.trim() !== "" && laneData.Place.trim() !== " ") {
+                        placeIndicator.textContent = getPlaceText(laneData.Place.trim());
+
+                        // Highlight first place
+                        if (laneData.Place.trim() === "1") {
+                            laneContent.classList.add('first-place');
+                        } else {
+                            laneContent.classList.remove('first-place');
+                        }
+                    } else {
+                        placeIndicator.textContent = "";
+                        laneContent.classList.remove('first-place');
+                    }
+
+                    // Animate in if not already visible
+                    if (!laneVisibility[laneCounter]) {
+                        laneContent.classList.remove('hiding');
+                        laneContent.classList.add('visible');
+                        laneVisibility[laneCounter] = true;
+                    }
+
+                    // Hide split when final is shown
+                    if (splitVisibility[laneCounter]) {
+                        // Clear the split timeout
+                        if (splitTimeouts[laneCounter]) {
+                            clearTimeout(splitTimeouts[laneCounter]);
+                            splitTimeouts[laneCounter] = null;
+                        }
+                        lastSplitValue[laneCounter] = null;
+
+                        splitContent.classList.remove('visible');
+                        splitContent.classList.add('hiding');
+                        splitVisibility[laneCounter] = false;
+                        setTimeout(() => {
+                            if (!splitVisibility[laneCounter]) {
+                                splitTime.textContent = "";
+                            }
+                        }, 300);
+                    }
+                } else {
+                    // Hide final time overlay
+                    if (laneVisibility[laneCounter]) {
+                        laneContent.classList.remove('visible');
+                        laneContent.classList.add('hiding');
+                        laneVisibility[laneCounter] = false;
+
+                        setTimeout(() => {
+                            if (!laneVisibility[laneCounter]) {
+                                swimmerName.textContent = "";
+                                finalTime.textContent = "";
+                                placeIndicator.textContent = "";
+                                laneContent.classList.remove('first-place');
+                            }
+                        }, 300);
+                    }
+
+                    // Show split time overlay (only split time, no final)
+                    if (hasData && hasSplitTime) {
+                        // Check if this is a new split value
+                        const isNewSplit = laneData.SplitTime !== lastSplitValue[laneCounter];
+
+                        if (isNewSplit) {
+                            lastSplitValue[laneCounter] = laneData.SplitTime;
+                            splitTime.textContent = laneData.SplitTime;
+
+                            // Clear any existing timeout
+                            if (splitTimeouts[laneCounter]) {
+                                clearTimeout(splitTimeouts[laneCounter]);
+                            }
+
+                            // Show split if not already visible
+                            if (!splitVisibility[laneCounter]) {
+                                splitContent.classList.remove('hiding');
+                                splitContent.classList.add('visible');
+                                splitVisibility[laneCounter] = true;
+                            }
+
+                            // Calculate display duration as 40% of split time value
+                            const splitSeconds = parseFloat(laneData.SplitTime) || 5;
+                            const displayDuration = splitSeconds * SPLIT_DISPLAY_PERCENT * 1000;
+
+                            // Set timeout to hide after calculated duration
+                            splitTimeouts[laneCounter] = setTimeout(() => {
+                                splitContent.classList.remove('visible');
+                                splitContent.classList.add('hiding');
+                                splitVisibility[laneCounter] = false;
+                                lastSplitValue[laneCounter] = null;
+
+                                setTimeout(() => {
+                                    if (!splitVisibility[laneCounter]) {
+                                        splitTime.textContent = "";
+                                    }
+                                }, 300);
+                            }, displayDuration);
+                        }
+                    }
+                    // Don't hide split based on JSON - let the timeout handle it
+                }
+            }
+        }
+
+        function getPlaceText(place) {
+            const num = parseInt(place);
+            if (isNaN(num)) return place;
+
+            const suffixes = ['th', 'st', 'nd', 'rd'];
+            const v = num % 100;
+            return num + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+        }
+    </script>
+</body>
+</html>

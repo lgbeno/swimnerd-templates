@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scoreboard Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #00d4ff;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .status.connected {
+            background: rgba(0, 255, 100, 0.2);
+            color: #00ff64;
+        }
+
+        .status.disconnected {
+            background: rgba(255, 100, 100, 0.2);
+            color: #ff6464;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-group {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 8px;
+            min-width: 200px;
+        }
+
+        .control-group h3 {
+            margin-bottom: 10px;
+            color: #00d4ff;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #0f0f23;
+            color: #eee;
+            font-size: 0.9rem;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: #00d4ff;
+            color: #000;
+        }
+
+        .btn-success {
+            background: #00ff64;
+            color: #000;
+        }
+
+        .btn-warning {
+            background: #ffaa00;
+            color: #000;
+        }
+
+        .btn-danger {
+            background: #ff4444;
+            color: #fff;
+        }
+
+        .lanes-editor {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .lanes-editor h2 {
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+
+        .lane-row {
+            display: grid;
+            grid-template-columns: 50px 1fr 150px 100px 100px 80px;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .lane-row.header {
+            font-weight: bold;
+            color: #00d4ff;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .lane-row input {
+            margin-bottom: 0;
+        }
+
+        .lane-number {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #00d4ff;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .presets {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .presets h2 {
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .json-preview {
+            background: #0f0f23;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <h1>Scoreboard Simulator</h1>
+
+    <div class="status disconnected" id="status">
+        Using BroadcastChannel (Open LaneOverlay.html in another tab)
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <h3>Event Info</h3>
+            <label>Event Number</label>
+            <input type="text" id="eventNumber" value="1">
+            <label>Heat Number</label>
+            <input type="text" id="heatNumber" value="1">
+            <label>Event Name</label>
+            <input type="text" id="eventName" value="100m Freestyle">
+        </div>
+        <div class="control-group">
+            <h3>Timer</h3>
+            <label>Running Time</label>
+            <input type="text" id="runningTime" value=":  .">
+            <button class="btn-primary" onclick="startTimer()">Start Timer</button>
+            <button class="btn-warning" onclick="stopTimer()">Stop Timer</button>
+        </div>
+    </div>
+
+    <div class="presets">
+        <h2>Quick Presets</h2>
+        <div class="preset-buttons">
+            <button class="btn-primary" onclick="loadPreset('empty')">Empty Lanes</button>
+            <button class="btn-success" onclick="loadPreset('fullRace')">Full Race Results</button>
+            <button class="btn-warning" onclick="loadPreset('partial')">Partial Results</button>
+            <button class="btn-primary" onclick="loadPreset('randomize')">Randomize Times</button>
+        </div>
+    </div>
+
+    <div class="presets">
+        <h2>Race Simulation</h2>
+        <div class="preset-buttons">
+            <button class="btn-success" onclick="startRaceSimulation()" id="raceSimBtn">Run Race Simulation</button>
+            <button class="btn-danger" onclick="stopRaceSimulation()">Stop Simulation</button>
+        </div>
+        <div id="raceStatus" style="margin-top: 10px; color: #aaa;"></div>
+    </div>
+
+    <div class="lanes-editor">
+        <h2>Lane Data</h2>
+        <div class="lane-row header">
+            <div>Lane</div>
+            <div>Athlete Name</div>
+            <div>Team</div>
+            <div>Final Time</div>
+            <div>Split Time</div>
+            <div>Place</div>
+        </div>
+        <div id="lanesContainer"></div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn-success" onclick="sendData()">Send Data</button>
+        <button class="btn-primary" onclick="sendDataContinuous()">Auto-Send (1s)</button>
+        <button class="btn-danger" onclick="stopContinuous()">Stop Auto</button>
+        <button class="btn-warning" onclick="clearAllTimes()">Clear All Times</button>
+    </div>
+
+    <div class="json-preview" id="jsonPreview">JSON preview will appear here...</div>
+
+    <script>
+        const NUM_LANES = 8;
+        let timerInterval = null;
+        let timerSeconds = 0;
+        let continuousInterval = null;
+
+        // BroadcastChannel for tab-to-tab communication
+        const channel = new BroadcastChannel('swimnerd-scoreboard');
+
+        // Also try WebSocket connection
+        let wsClient = null;
+        function connectWebSocket() {
+            try {
+                wsClient = new WebSocket("ws://localhost:8080/");
+                wsClient.onopen = () => {
+                    document.getElementById('status').textContent = 'Connected to WebSocket server on port 8080';
+                    document.getElementById('status').className = 'status connected';
+                };
+                wsClient.onclose = () => {
+                    document.getElementById('status').textContent = 'Using BroadcastChannel (Open LaneOverlay.html in another tab)';
+                    document.getElementById('status').className = 'status disconnected';
+                    wsClient = null;
+                };
+                wsClient.onerror = () => {
+                    wsClient = null;
+                };
+            } catch (e) {
+                console.log('WebSocket not available, using BroadcastChannel only');
+            }
+        }
+        connectWebSocket();
+
+        // Sample swimmer names
+        const sampleNames = [
+            "Michael Phelps", "Katie Ledecky", "Caeleb Dressel", "Simone Manuel",
+            "Ryan Lochte", "Missy Franklin", "Nathan Adrian", "Natalie Coughlin",
+            "Adam Peaty", "Sarah Sjostrom", "Chad le Clos", "Penny Oleksiak"
+        ];
+
+        const sampleTeams = ["USA", "AUS", "GBR", "CAN", "GER", "SWE", "RSA", "JPN"];
+
+        // Initialize lane editor
+        function initLanes() {
+            const container = document.getElementById('lanesContainer');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= NUM_LANES; i++) {
+                const row = document.createElement('div');
+                row.className = 'lane-row';
+                row.innerHTML = `
+                    <div class="lane-number">${i}</div>
+                    <input type="text" id="name-${i}" placeholder="Athlete Name">
+                    <input type="text" id="team-${i}" placeholder="Team">
+                    <input type="text" id="finalTime-${i}" placeholder="0:00.00">
+                    <input type="text" id="splitTime-${i}" placeholder="." value=".">
+                    <input type="text" id="place-${i}" placeholder=" " value=" ">
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        // Build JSON data from form
+        function buildJsonData() {
+            const lanes = [];
+            for (let i = 1; i <= NUM_LANES; i++) {
+                const name = document.getElementById(`name-${i}`).value;
+                const hasData = name.trim() !== '';
+
+                lanes.push({
+                    LaneNumber: hasData ? String(i) : "",
+                    AthleteName: name,
+                    Team: document.getElementById(`team-${i}`).value,
+                    Place: document.getElementById(`place-${i}`).value || " ",
+                    SplitTime: document.getElementById(`splitTime-${i}`).value || ".",
+                    FinalTime: document.getElementById(`finalTime-${i}`).value
+                });
+            }
+
+            return {
+                swimming: {
+                    EventNumber: document.getElementById('eventNumber').value,
+                    HeatNumber: document.getElementById('heatNumber').value,
+                    EventName: document.getElementById('eventName').value,
+                    RunningTime: document.getElementById('runningTime').value,
+                    LaneAthleteTeam: lanes
+                }
+            };
+        }
+
+        // Send data to overlay
+        function sendData() {
+            const data = buildJsonData();
+            const jsonStr = JSON.stringify(data, null, 2);
+            document.getElementById('jsonPreview').textContent = jsonStr;
+
+            // Send via BroadcastChannel
+            channel.postMessage(data);
+
+            // Also send via WebSocket if connected
+            if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+                wsClient.send(JSON.stringify(data));
+            }
+        }
+
+        let autoSending = false;
+        function sendDataContinuous() {
+            if (continuousInterval) return;
+            autoSending = true;
+            sendData();
+            continuousInterval = setInterval(sendData, 1000);
+        }
+
+        function stopContinuous() {
+            if (continuousInterval) {
+                clearInterval(continuousInterval);
+                continuousInterval = null;
+            }
+            autoSending = false;
+        }
+
+        // Timer functions
+        function startTimer() {
+            if (timerInterval) return;
+            timerSeconds = 0;
+            timerInterval = setInterval(() => {
+                timerSeconds += 0.1;
+                const mins = Math.floor(timerSeconds / 60);
+                const secs = (timerSeconds % 60).toFixed(1);
+                document.getElementById('runningTime').value = `${mins}:${secs.padStart(4, '0')}`;
+                if (autoSending) sendData();
+            }, 100);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('runningTime').value = ":  .";
+        }
+
+        // Presets
+        function loadPreset(preset) {
+            switch (preset) {
+                case 'empty':
+                    for (let i = 1; i <= NUM_LANES; i++) {
+                        document.getElementById(`name-${i}`).value = '';
+                        document.getElementById(`team-${i}`).value = '';
+                        document.getElementById(`finalTime-${i}`).value = '';
+                        document.getElementById(`splitTime-${i}`).value = '.';
+                        document.getElementById(`place-${i}`).value = ' ';
+                    }
+                    break;
+
+                case 'fullRace':
+                    const times = generateRaceTimes();
+                    const shuffledNames = [...sampleNames].sort(() => Math.random() - 0.5);
+                    const shuffledTeams = [...sampleTeams].sort(() => Math.random() - 0.5);
+
+                    for (let i = 1; i <= NUM_LANES; i++) {
+                        document.getElementById(`name-${i}`).value = shuffledNames[i - 1] || `Swimmer ${i}`;
+                        document.getElementById(`team-${i}`).value = shuffledTeams[(i - 1) % sampleTeams.length];
+                        document.getElementById(`finalTime-${i}`).value = times[i - 1].time;
+                        document.getElementById(`splitTime-${i}`).value = times[i - 1].split;
+                        document.getElementById(`place-${i}`).value = times[i - 1].place;
+                    }
+                    break;
+
+                case 'partial':
+                    loadPreset('fullRace');
+                    // Clear some lanes
+                    for (let i = 5; i <= NUM_LANES; i++) {
+                        document.getElementById(`finalTime-${i}`).value = '';
+                        document.getElementById(`place-${i}`).value = ' ';
+                    }
+                    break;
+
+                case 'randomize':
+                    const newTimes = generateRaceTimes();
+                    for (let i = 1; i <= NUM_LANES; i++) {
+                        if (document.getElementById(`name-${i}`).value) {
+                            document.getElementById(`finalTime-${i}`).value = newTimes[i - 1].time;
+                            document.getElementById(`splitTime-${i}`).value = newTimes[i - 1].split;
+                            document.getElementById(`place-${i}`).value = newTimes[i - 1].place;
+                        }
+                    }
+                    break;
+            }
+            sendData();
+        }
+
+        function generateRaceTimes() {
+            const basetime = 50 + Math.random() * 20; // 50-70 seconds
+            const times = [];
+
+            for (let i = 0; i < NUM_LANES; i++) {
+                const variance = Math.random() * 8; // 0-8 seconds variance
+                const totalSeconds = basetime + variance;
+                const mins = Math.floor(totalSeconds / 60);
+                const secs = (totalSeconds % 60).toFixed(2);
+                const splitSeconds = totalSeconds * 0.48 + Math.random() * 2;
+                const splitSecs = splitSeconds.toFixed(2);
+
+                times.push({
+                    time: `${mins}:${secs.padStart(5, '0')}`,
+                    split: splitSecs,
+                    totalSeconds: totalSeconds
+                });
+            }
+
+            // Sort by time and assign places
+            times.sort((a, b) => a.totalSeconds - b.totalSeconds);
+            times.forEach((t, idx) => t.place = String(idx + 1));
+
+            // Shuffle back to lane order but keep places
+            const result = [];
+            const shuffled = [...times].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < NUM_LANES; i++) {
+                result.push(shuffled[i]);
+            }
+
+            return result;
+        }
+
+        function clearAllTimes() {
+            for (let i = 1; i <= NUM_LANES; i++) {
+                document.getElementById(`finalTime-${i}`).value = '';
+                document.getElementById(`splitTime-${i}`).value = '.';
+                document.getElementById(`place-${i}`).value = ' ';
+            }
+            sendData();
+        }
+
+        // Race Simulation
+        let raceSimulationRunning = false;
+        let raceTimeouts = [];
+        let laneSplitTimes = []; // Store cumulative split times for each lane
+        let laneFinalTimes = []; // Store final times for place calculation
+
+        function startRaceSimulation() {
+            if (raceSimulationRunning) return;
+            raceSimulationRunning = true;
+
+            // Clear any existing timeouts
+            raceTimeouts.forEach(t => clearTimeout(t));
+            raceTimeouts = [];
+
+            // Setup swimmers
+            const shuffledNames = [...sampleNames].sort(() => Math.random() - 0.5);
+            const shuffledTeams = [...sampleTeams].sort(() => Math.random() - 0.5);
+
+            // Initialize lane data
+            laneSplitTimes = [];
+            laneFinalTimes = [];
+
+            for (let i = 1; i <= NUM_LANES; i++) {
+                document.getElementById(`name-${i}`).value = shuffledNames[i - 1] || `Swimmer ${i}`;
+                document.getElementById(`team-${i}`).value = shuffledTeams[(i - 1) % sampleTeams.length];
+                document.getElementById(`finalTime-${i}`).value = '';
+                document.getElementById(`splitTime-${i}`).value = '.';
+                document.getElementById(`place-${i}`).value = ' ';
+
+                // Generate random lap times for this lane (realistic swimming ~13-15 sec per lap)
+                const baseLapTime = 13 + Math.random() * 2; // 13-15 sec base per lap
+                const splitDeltas = []; // Individual lap times (not cumulative)
+                const splitCumulative = []; // When each split occurs (for scheduling)
+                let cumulative = 0;
+                for (let s = 0; s < 3; s++) {
+                    const lapTime = baseLapTime + (Math.random() - 0.5) * 2; // +/- 1 sec variance
+                    cumulative += lapTime;
+                    splitDeltas.push(lapTime);
+                    splitCumulative.push(cumulative);
+                }
+                // Final lap tends to be slower (tired swimmer)
+                const finalLap = baseLapTime + 3 + Math.random() * 4; // 16-22 sec for final lap
+                cumulative += finalLap;
+                laneSplitTimes.push({ deltas: splitDeltas, cumulative: splitCumulative });
+                laneFinalTimes.push(cumulative);
+            }
+
+            // Clear and start timer
+            stopTimer();
+            clearAllTimes();
+            startTimer();
+            sendDataContinuous();
+
+            updateRaceStatus('Race started - waiting for Split 1...');
+
+            // Schedule splits for each lane
+            for (let lane = 1; lane <= NUM_LANES; lane++) {
+                const { deltas, cumulative } = laneSplitTimes[lane - 1];
+                const finalTime = laneFinalTimes[lane - 1];
+
+                // Split 1
+                const t1 = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    const lapTime = deltas[0];
+                    document.getElementById(`splitTime-${lane}`).value = lapTime.toFixed(2);
+                    updateRaceStatus(`Split 1: Lane ${lane} - ${lapTime.toFixed(2)}`);
+                }, cumulative[0] * 1000);
+                raceTimeouts.push(t1);
+
+                // Clear split 1 after 1.5 seconds
+                const t1c = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`splitTime-${lane}`).value = '.';
+                }, (cumulative[0] + 1.5) * 1000);
+                raceTimeouts.push(t1c);
+
+                // Split 2
+                const t2 = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    const lapTime = deltas[1];
+                    document.getElementById(`splitTime-${lane}`).value = lapTime.toFixed(2);
+                    updateRaceStatus(`Split 2: Lane ${lane} - ${lapTime.toFixed(2)}`);
+                }, cumulative[1] * 1000);
+                raceTimeouts.push(t2);
+
+                // Clear split 2 after 1.5 seconds
+                const t2c = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`splitTime-${lane}`).value = '.';
+                }, (cumulative[1] + 1.5) * 1000);
+                raceTimeouts.push(t2c);
+
+                // Split 3
+                const t3 = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    const lapTime = deltas[2];
+                    document.getElementById(`splitTime-${lane}`).value = lapTime.toFixed(2);
+                    updateRaceStatus(`Split 3: Lane ${lane} - ${lapTime.toFixed(2)}`);
+                }, cumulative[2] * 1000);
+                raceTimeouts.push(t3);
+
+                // Clear split 3 after 1.5 seconds
+                const t3c = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`splitTime-${lane}`).value = '.';
+                }, (cumulative[2] + 1.5) * 1000);
+                raceTimeouts.push(t3c);
+
+                // Final time
+                const tFinal = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    const mins = Math.floor(finalTime / 60);
+                    const secs = (finalTime % 60).toFixed(2);
+                    document.getElementById(`finalTime-${lane}`).value = `${mins}:${secs.padStart(5, '0')}`;
+                    document.getElementById(`splitTime-${lane}`).value = '.';
+
+                    // Calculate place based on who has finished
+                    updatePlaces();
+                    updateRaceStatus(`Finish: Lane ${lane} - ${mins}:${secs.padStart(5, '0')}`);
+                }, finalTime * 1000);
+                raceTimeouts.push(tFinal);
+            }
+
+            // End race after all swimmers finish (max time + buffer)
+            const maxTime = Math.max(...laneFinalTimes);
+            const tEnd = setTimeout(() => {
+                if (!raceSimulationRunning) return;
+                updateRaceStatus('Race complete!');
+                stopTimer();
+                raceSimulationRunning = false;
+            }, (maxTime + 3) * 1000);
+            raceTimeouts.push(tEnd);
+        }
+
+        function stopRaceSimulation() {
+            raceSimulationRunning = false;
+            raceTimeouts.forEach(t => clearTimeout(t));
+            raceTimeouts = [];
+            stopTimer();
+            stopContinuous();
+            updateRaceStatus('Simulation stopped');
+        }
+
+        function updatePlaces() {
+            // Get all lanes with final times and sort by time
+            const finishers = [];
+            for (let i = 1; i <= NUM_LANES; i++) {
+                const finalTimeStr = document.getElementById(`finalTime-${i}`).value;
+                if (finalTimeStr && finalTimeStr.trim() !== '') {
+                    // Parse time string like "1:05.23"
+                    const parts = finalTimeStr.split(':');
+                    const mins = parseInt(parts[0]) || 0;
+                    const secs = parseFloat(parts[1]) || 0;
+                    const totalSecs = mins * 60 + secs;
+                    finishers.push({ lane: i, time: totalSecs });
+                }
+            }
+
+            // Sort by time
+            finishers.sort((a, b) => a.time - b.time);
+
+            // Assign places
+            finishers.forEach((f, idx) => {
+                document.getElementById(`place-${f.lane}`).value = String(idx + 1);
+            });
+        }
+
+        function updateRaceStatus(message) {
+            document.getElementById('raceStatus').textContent = message;
+        }
+
+        // Initialize
+        initLanes();
+        loadPreset('fullRace');
+    </script>
+</body>
+</html>
