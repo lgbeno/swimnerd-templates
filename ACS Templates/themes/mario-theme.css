@@ -104,6 +104,61 @@ body {
     100% { transform: translateX(-100%); opacity: 0; }
 }
 
+/* Pre-race lineup display */
+.lineup-content {
+    background: linear-gradient(180deg, var(--mario-blue) 0%, #037ba8 50%, #025a7a 100%);
+    border: var(--border-width) solid var(--color-gold);
+    border-radius: var(--border-radius);
+    box-shadow:
+        inset 0 -4px 0 rgba(0,0,0,0.3),
+        0 4px 8px var(--shadow-color),
+        0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.lineup-content.visible {
+    animation: pipeSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.lineup-content.hiding {
+    animation: fadeOutQuick 0.2s ease-out forwards;
+}
+
+@keyframes fadeOutQuick {
+    0% { opacity: 1; transform: scaleX(1); }
+    100% { opacity: 0; transform: scaleX(1); }
+}
+
+.lineup-name {
+    font-size: 1rem;
+    color: var(--color-text-primary);
+    text-shadow:
+        2px 2px 0 #000,
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000;
+}
+
+.lineup-team {
+    font-size: 0.8rem;
+    color: var(--color-gold);
+    text-shadow:
+        2px 2px 0 #000,
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000;
+}
+
+/* Lane number in lineup */
+.lineup-lane {
+    font-size: 1.5rem;
+    color: var(--color-gold);
+    text-shadow:
+        3px 3px 0 #000,
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000;
+}
+
 /* Place indicator */
 .place-indicator {
     font-size: 1.5rem;
@@ -212,18 +267,7 @@ body {
 }
 
 .split-content::before {
-    content: "?";
-    position: absolute;
-    left: 15px;
-    font-size: 1.5rem;
-    color: #000;
-    text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
-    animation: questionBounce 0.5s ease-in-out infinite;
-}
-
-@keyframes questionBounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
+    display: none;
 }
 
 .split-content.visible {
@@ -248,7 +292,6 @@ body {
 .split-time {
     font-size: 1.4rem;
     color: #fff;
-    margin-left: 30px;
     text-shadow:
         3px 3px 0 #000,
         -1px -1px 0 #000,
@@ -271,32 +314,101 @@ body {
         0 4px 8px var(--shadow-color);
 }
 
-/* Brick style for Event Name box */
+/* Green Pipe style for Event Name box */
 .header-box.stretch .header-content {
-    background: linear-gradient(180deg, var(--color-brick) 0%, #a03c08 50%, var(--color-brick-dark) 100%);
-    border: var(--border-width) solid #000;
-    border-radius: var(--border-radius);
+    background: linear-gradient(180deg,
+        #000 0%, #000 4px,
+        #7dff7d 4px, #7dff7d 8px,
+        #00b800 8px, #00b800 12px,
+        #43b047 12px, #43b047 calc(100% - 12px),
+        #00b800 calc(100% - 12px), #00b800 calc(100% - 8px),
+        #7dff7d calc(100% - 8px), #7dff7d calc(100% - 4px),
+        #000 calc(100% - 4px), #000 100%
+    );
+    border: 4px solid #000;
+    border-radius: 0;
     box-shadow:
-        inset 0 -4px 0 rgba(0,0,0,0.3),
+        inset 4px 0 0 #7dff7d,
+        inset -4px 0 0 #007800,
         0 4px 8px var(--shadow-color);
     position: relative;
 }
 
-/* Brick pattern overlay */
-.header-box.stretch .header-content::before {
+/* Pipe end caps */
+.header-box.stretch .header-content::before,
+.header-box.stretch .header-content::after {
     content: "";
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image:
-        linear-gradient(to right, rgba(0,0,0,0.2) 2px, transparent 2px),
-        linear-gradient(to bottom, rgba(0,0,0,0.2) 2px, transparent 2px);
-    background-size: 40px 50%, 80px 100%;
-    background-position: 0 0, 40px 50%;
+    top: -8px;
+    width: 20px;
+    height: calc(100% + 16px);
+    background: linear-gradient(90deg,
+        #000 0%, #000 2px,
+        #7dff7d 2px, #7dff7d 6px,
+        #43b047 6px, #43b047 14px,
+        #007800 14px, #007800 18px,
+        #000 18px, #000 20px
+    );
+    z-index: 2;
+}
+
+.header-box.stretch .header-content::before {
+    left: -4px;
+    border-radius: 4px 0 0 4px;
+}
+
+.header-box.stretch .header-content::after {
+    right: -4px;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Mario running sprite - sprite sheet animation */
+.mario-runner {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    bottom: 5px;
+    left: -70px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 16'%3E%3C!-- Frame 1: Right leg forward --%3E%3Cg transform='translate(0,0)'%3E%3Crect fill='%23e52521' x='3' y='0' width='5' height='1'/%3E%3Crect fill='%23e52521' x='2' y='1' width='9' height='1'/%3E%3Crect fill='%23000' x='2' y='2' width='3' height='1'/%3E%3Crect fill='%23ffb266' x='5' y='2' width='2' height='1'/%3E%3Crect fill='%23000' x='7' y='2' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='8' y='2' width='1' height='1'/%3E%3Crect fill='%23000' x='1' y='3' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='2' y='3' width='1' height='1'/%3E%3Crect fill='%23000' x='3' y='3' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='4' y='3' width='3' height='1'/%3E%3Crect fill='%23000' x='7' y='3' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='8' y='3' width='3' height='1'/%3E%3Crect fill='%23000' x='1' y='4' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='2' y='4' width='1' height='1'/%3E%3Crect fill='%23000' x='3' y='4' width='2' height='1'/%3E%3Crect fill='%23ffb266' x='5' y='4' width='3' height='1'/%3E%3Crect fill='%23000' x='8' y='4' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='9' y='4' width='3' height='1'/%3E%3Crect fill='%23000' x='2' y='5' width='2' height='1'/%3E%3Crect fill='%23ffb266' x='4' y='5' width='5' height='1'/%3E%3Crect fill='%23000' x='9' y='5' width='3' height='1'/%3E%3Crect fill='%23ffb266' x='4' y='6' width='4' height='1'/%3E%3Crect fill='%23e52521' x='2' y='7' width='2' height='1'/%3E%3Crect fill='%23049cd8' x='4' y='7' width='3' height='1'/%3E%3Crect fill='%23e52521' x='7' y='7' width='2' height='1'/%3E%3Crect fill='%23e52521' x='1' y='8' width='3' height='1'/%3E%3Crect fill='%23049cd8' x='4' y='8' width='5' height='1'/%3E%3Crect fill='%23e52521' x='9' y='8' width='3' height='1'/%3E%3Crect fill='%23049cd8' x='2' y='9' width='3' height='1'/%3E%3Crect fill='%23fbd000' x='5' y='9' width='1' height='1'/%3E%3Crect fill='%23049cd8' x='6' y='9' width='3' height='1'/%3E%3Crect fill='%23fbd000' x='9' y='9' width='1' height='1'/%3E%3Crect fill='%23049cd8' x='10' y='9' width='2' height='1'/%3E%3Crect fill='%23049cd8' x='2' y='10' width='4' height='1'/%3E%3Crect fill='%23049cd8' x='8' y='10' width='4' height='1'/%3E%3Crect fill='%23ffb266' x='1' y='11' width='2' height='1'/%3E%3Crect fill='%23000' x='3' y='11' width='3' height='1'/%3E%3Crect fill='%23ffb266' x='10' y='11' width='2' height='1'/%3E%3Crect fill='%23000' x='0' y='12' width='1' height='1'/%3E%3Crect fill='%23804000' x='1' y='12' width='2' height='1'/%3E%3Crect fill='%23000' x='3' y='12' width='1' height='1'/%3E%3Crect fill='%23000' x='10' y='12' width='1' height='1'/%3E%3Crect fill='%23804000' x='11' y='12' width='2' height='1'/%3E%3Crect fill='%23000' x='13' y='12' width='1' height='1'/%3E%3Crect fill='%23000' x='0' y='13' width='4' height='1'/%3E%3Crect fill='%23000' x='10' y='13' width='4' height='1'/%3E%3C/g%3E%3C!-- Frame 2: Left leg forward --%3E%3Cg transform='translate(16,0)'%3E%3Crect fill='%23e52521' x='3' y='0' width='5' height='1'/%3E%3Crect fill='%23e52521' x='2' y='1' width='9' height='1'/%3E%3Crect fill='%23000' x='2' y='2' width='3' height='1'/%3E%3Crect fill='%23ffb266' x='5' y='2' width='2' height='1'/%3E%3Crect fill='%23000' x='7' y='2' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='8' y='2' width='1' height='1'/%3E%3Crect fill='%23000' x='1' y='3' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='2' y='3' width='1' height='1'/%3E%3Crect fill='%23000' x='3' y='3' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='4' y='3' width='3' height='1'/%3E%3Crect fill='%23000' x='7' y='3' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='8' y='3' width='3' height='1'/%3E%3Crect fill='%23000' x='1' y='4' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='2' y='4' width='1' height='1'/%3E%3Crect fill='%23000' x='3' y='4' width='2' height='1'/%3E%3Crect fill='%23ffb266' x='5' y='4' width='3' height='1'/%3E%3Crect fill='%23000' x='8' y='4' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='9' y='4' width='3' height='1'/%3E%3Crect fill='%23000' x='2' y='5' width='2' height='1'/%3E%3Crect fill='%23ffb266' x='4' y='5' width='5' height='1'/%3E%3Crect fill='%23000' x='9' y='5' width='3' height='1'/%3E%3Crect fill='%23ffb266' x='4' y='6' width='4' height='1'/%3E%3Crect fill='%23e52521' x='2' y='7' width='2' height='1'/%3E%3Crect fill='%23049cd8' x='4' y='7' width='3' height='1'/%3E%3Crect fill='%23e52521' x='7' y='7' width='2' height='1'/%3E%3Crect fill='%23e52521' x='1' y='8' width='3' height='1'/%3E%3Crect fill='%23049cd8' x='4' y='8' width='5' height='1'/%3E%3Crect fill='%23e52521' x='9' y='8' width='3' height='1'/%3E%3Crect fill='%23049cd8' x='2' y='9' width='3' height='1'/%3E%3Crect fill='%23fbd000' x='5' y='9' width='1' height='1'/%3E%3Crect fill='%23049cd8' x='6' y='9' width='3' height='1'/%3E%3Crect fill='%23fbd000' x='9' y='9' width='1' height='1'/%3E%3Crect fill='%23049cd8' x='10' y='9' width='2' height='1'/%3E%3Crect fill='%23049cd8' x='3' y='10' width='3' height='1'/%3E%3Crect fill='%23049cd8' x='7' y='10' width='3' height='1'/%3E%3Crect fill='%23000' x='5' y='11' width='4' height='1'/%3E%3Crect fill='%23ffb266' x='3' y='11' width='2' height='1'/%3E%3Crect fill='%23ffb266' x='9' y='11' width='2' height='1'/%3E%3Crect fill='%23000' x='2' y='12' width='1' height='1'/%3E%3Crect fill='%23804000' x='3' y='12' width='2' height='1'/%3E%3Crect fill='%23000' x='5' y='12' width='1' height='1'/%3E%3Crect fill='%23000' x='8' y='12' width='1' height='1'/%3E%3Crect fill='%23804000' x='9' y='12' width='2' height='1'/%3E%3Crect fill='%23000' x='11' y='12' width='1' height='1'/%3E%3Crect fill='%23000' x='2' y='13' width='4' height='1'/%3E%3Crect fill='%23000' x='8' y='13' width='4' height='1'/%3E%3C/g%3E%3C!-- Frame 3: Legs together --%3E%3Cg transform='translate(32,0)'%3E%3Crect fill='%23e52521' x='3' y='0' width='5' height='1'/%3E%3Crect fill='%23e52521' x='2' y='1' width='9' height='1'/%3E%3Crect fill='%23000' x='2' y='2' width='3' height='1'/%3E%3Crect fill='%23ffb266' x='5' y='2' width='2' height='1'/%3E%3Crect fill='%23000' x='7' y='2' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='8' y='2' width='1' height='1'/%3E%3Crect fill='%23000' x='1' y='3' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='2' y='3' width='1' height='1'/%3E%3Crect fill='%23000' x='3' y='3' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='4' y='3' width='3' height='1'/%3E%3Crect fill='%23000' x='7' y='3' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='8' y='3' width='3' height='1'/%3E%3Crect fill='%23000' x='1' y='4' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='2' y='4' width='1' height='1'/%3E%3Crect fill='%23000' x='3' y='4' width='2' height='1'/%3E%3Crect fill='%23ffb266' x='5' y='4' width='3' height='1'/%3E%3Crect fill='%23000' x='8' y='4' width='1' height='1'/%3E%3Crect fill='%23ffb266' x='9' y='4' width='3' height='1'/%3E%3Crect fill='%23000' x='2' y='5' width='2' height='1'/%3E%3Crect fill='%23ffb266' x='4' y='5' width='5' height='1'/%3E%3Crect fill='%23000' x='9' y='5' width='3' height='1'/%3E%3Crect fill='%23ffb266' x='4' y='6' width='4' height='1'/%3E%3Crect fill='%23e52521' x='2' y='7' width='2' height='1'/%3E%3Crect fill='%23049cd8' x='4' y='7' width='3' height='1'/%3E%3Crect fill='%23e52521' x='7' y='7' width='2' height='1'/%3E%3Crect fill='%23e52521' x='1' y='8' width='3' height='1'/%3E%3Crect fill='%23049cd8' x='4' y='8' width='5' height='1'/%3E%3Crect fill='%23e52521' x='9' y='8' width='3' height='1'/%3E%3Crect fill='%23049cd8' x='3' y='9' width='2' height='1'/%3E%3Crect fill='%23fbd000' x='5' y='9' width='1' height='1'/%3E%3Crect fill='%23049cd8' x='6' y='9' width='2' height='1'/%3E%3Crect fill='%23fbd000' x='8' y='9' width='1' height='1'/%3E%3Crect fill='%23049cd8' x='9' y='9' width='2' height='1'/%3E%3Crect fill='%23049cd8' x='4' y='10' width='5' height='1'/%3E%3Crect fill='%23ffb266' x='4' y='11' width='2' height='1'/%3E%3Crect fill='%23ffb266' x='7' y='11' width='2' height='1'/%3E%3Crect fill='%23000' x='3' y='12' width='1' height='1'/%3E%3Crect fill='%23804000' x='4' y='12' width='2' height='1'/%3E%3Crect fill='%23000' x='6' y='12' width='1' height='1'/%3E%3Crect fill='%23000' x='6' y='12' width='1' height='1'/%3E%3Crect fill='%23804000' x='7' y='12' width='2' height='1'/%3E%3Crect fill='%23000' x='9' y='12' width='1' height='1'/%3E%3Crect fill='%23000' x='3' y='13' width='3' height='1'/%3E%3Crect fill='%23000' x='7' y='13' width='3' height='1'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 192px 64px;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    image-rendering: pixelated;
+    opacity: 0;
     pointer-events: none;
-    border-radius: 4px;
+    z-index: 5;
+}
+
+.mario-runner.running {
+    animation: marioRun 5s linear forwards, marioLegs 0.15s steps(1) infinite;
+}
+
+@keyframes marioRun {
+    0% {
+        left: -70px;
+        opacity: 1;
+    }
+    100% {
+        left: calc(100% + 150px);
+        opacity: 1;
+    }
+}
+
+@keyframes marioLegs {
+    0% { background-position: 0 0; }
+    33.33% { background-position: -64px 0; }
+    66.66% { background-position: -128px 0; }
+}
+
+/* Pipe needs higher z-index so Mario runs behind it */
+#nameBox {
+    position: relative;
+    z-index: 10;
+}
+
+#nameBox .header-content {
+    position: relative;
+    z-index: 10;
 }
 
 .header-content.visible {
@@ -310,6 +422,47 @@ body {
 #eventBox .header-content.visible { animation-delay: 0s; }
 #heatBox .header-content.visible { animation-delay: 0.1s; }
 #nameBox .header-content.visible { animation-delay: 0.2s; }
+
+/* Explode animation for Event/Heat number changes */
+#eventBox .header-content.exploding,
+#heatBox .header-content.exploding {
+    animation: explode 0.3s ease-out forwards !important;
+}
+
+#eventBox .header-content.appearing,
+#heatBox .header-content.appearing {
+    animation: appear 0.3s ease-out forwards !important;
+}
+
+/* After explosion completes, use 'appeared' class with no animation */
+#eventBox .header-content.appeared,
+#heatBox .header-content.appeared {
+    animation: none !important;
+    transform: translateY(0);
+    opacity: 1;
+}
+
+@keyframes explode {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(0) scale(0);
+        opacity: 0;
+    }
+}
+
+@keyframes appear {
+    0% {
+        transform: translateY(-30px) scale(0.5);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
 
 @keyframes blockDrop {
     0% { transform: translateY(-100%); opacity: 0; }
@@ -326,6 +479,7 @@ body {
     font-size: 0.7rem;
     color: #000;
     text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+    margin-right: 8px;
 }
 
 .value {
@@ -336,16 +490,10 @@ body {
         -1px -1px 0 #000,
         1px -1px 0 #000,
         -1px 1px 0 #000;
-    animation: coinSpin 1s ease-in-out infinite;
-}
-
-@keyframes coinSpin {
-    0%, 100% { transform: scaleX(1); }
-    50% { transform: scaleX(0.8); }
 }
 
 .event-name {
-    font-size: 1rem;
+    font-size: 1.4rem;
     color: var(--color-gold);
     text-shadow:
         2px 2px 0 #000,
@@ -354,6 +502,52 @@ body {
         -1px 1px 0 #000;
     position: relative;
     z-index: 1;
+}
+
+/* Scrolling marquee - copy inherits same styling as original */
+.event-name-copy {
+    font-size: 1.4rem;
+    color: var(--color-gold);
+    text-shadow:
+        2px 2px 0 #000,
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000;
+}
+
+/* Mario Star Icon - 8-bit pixel style */
+.mario-star {
+    width: 40px;
+    height: 40px;
+    margin-right: 8px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 15'%3E%3Crect fill='%23000' x='7' y='0' width='2' height='1'/%3E%3Crect fill='%23e8c000' x='7' y='1' width='2' height='1'/%3E%3Crect fill='%23000' x='6' y='1' width='1' height='1'/%3E%3Crect fill='%23000' x='9' y='1' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='6' y='2' width='4' height='1'/%3E%3Crect fill='%23000' x='5' y='2' width='1' height='1'/%3E%3Crect fill='%23000' x='10' y='2' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='5' y='3' width='6' height='1'/%3E%3Crect fill='%23000' x='4' y='3' width='1' height='1'/%3E%3Crect fill='%23000' x='11' y='3' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='4' y='4' width='8' height='1'/%3E%3Crect fill='%23000' x='3' y='4' width='1' height='1'/%3E%3Crect fill='%23000' x='12' y='4' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='1' y='5' width='14' height='1'/%3E%3Crect fill='%23000' x='0' y='5' width='1' height='1'/%3E%3Crect fill='%23000' x='15' y='5' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='2' y='6' width='12' height='1'/%3E%3Crect fill='%23000' x='1' y='6' width='1' height='1'/%3E%3Crect fill='%23000' x='14' y='6' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='3' y='7' width='10' height='1'/%3E%3Crect fill='%23000' x='2' y='7' width='1' height='1'/%3E%3Crect fill='%23000' x='13' y='7' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='3' y='8' width='10' height='1'/%3E%3Crect fill='%23000' x='2' y='8' width='1' height='1'/%3E%3Crect fill='%23000' x='13' y='8' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='3' y='9' width='10' height='1'/%3E%3Crect fill='%23000' x='2' y='9' width='1' height='1'/%3E%3Crect fill='%23000' x='13' y='9' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='2' y='10' width='5' height='1'/%3E%3Crect fill='%23e8c000' x='9' y='10' width='5' height='1'/%3E%3Crect fill='%23000' x='1' y='10' width='1' height='1'/%3E%3Crect fill='%23000' x='7' y='10' width='2' height='1'/%3E%3Crect fill='%23000' x='14' y='10' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='1' y='11' width='5' height='1'/%3E%3Crect fill='%23e8c000' x='10' y='11' width='5' height='1'/%3E%3Crect fill='%23000' x='0' y='11' width='1' height='1'/%3E%3Crect fill='%23000' x='6' y='11' width='4' height='1'/%3E%3Crect fill='%23000' x='15' y='11' width='1' height='1'/%3E%3Crect fill='%23e8c000' x='0' y='12' width='5' height='1'/%3E%3Crect fill='%23e8c000' x='11' y='12' width='5' height='1'/%3E%3Crect fill='%23000' x='5' y='12' width='6' height='1'/%3E%3Crect fill='%23000' x='0' y='13' width='4' height='1'/%3E%3Crect fill='%23000' x='12' y='13' width='4' height='1'/%3E%3Crect fill='%23000' x='6' y='4' width='1' height='3'/%3E%3Crect fill='%23000' x='9' y='4' width='1' height='3'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    image-rendering: pixelated;
+    animation: starGlow 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes starGlow {
+    0% { filter: brightness(1) drop-shadow(0 0 2px rgba(251, 208, 0, 0.5)); }
+    100% { filter: brightness(1.2) drop-shadow(0 0 6px rgba(251, 208, 0, 0.8)); }
+}
+
+/* Mario Coin Icon - 8-bit pixel style */
+.mario-coin {
+    width: 32px;
+    height: 40px;
+    margin-right: 8px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 16'%3E%3Cpath fill='%23000' d='M4 0h4v1h-4zM2 1h2v1h-2zM8 1h2v1h-2zM1 2h1v1h-1zM10 2h1v1h-1zM0 3h1v1h-1zM11 3h1v1h-1zM0 4h1v1h-1zM11 4h1v1h-1zM0 5h1v1h-1zM11 5h1v1h-1zM0 6h1v1h-1zM11 6h1v1h-1zM0 7h1v1h-1zM11 7h1v1h-1zM0 8h1v1h-1zM11 8h1v1h-1zM0 9h1v1h-1zM11 9h1v1h-1zM0 10h1v1h-1zM11 10h1v1h-1zM0 11h1v1h-1zM11 11h1v1h-1zM1 12h1v1h-1zM10 12h1v1h-1zM2 13h2v1h-2zM8 13h2v1h-2zM4 14h4v1h-4z'/%3E%3Cpath fill='%23FBD000' d='M4 1h4v1h-4zM2 2h2v1h-2zM5 2h4v1h-4zM2 3h1v1h-1zM4 3h6v1h-6zM2 4h1v1h-1zM4 4h1v1h-1zM6 4h4v1h-4zM2 5h1v1h-1zM4 5h1v1h-1zM6 5h4v1h-4zM2 6h1v1h-1zM4 6h1v1h-1zM6 6h4v1h-4zM2 7h1v1h-1zM4 7h1v1h-1zM6 7h4v1h-4zM2 8h1v1h-1zM4 8h1v1h-1zM6 8h4v1h-4zM2 9h1v1h-1zM4 9h1v1h-1zM6 9h4v1h-4zM2 10h1v1h-1zM4 10h1v1h-1zM6 10h4v1h-4zM2 11h1v1h-1zM4 11h6v1h-6zM2 12h2v1h-2zM5 12h4v1h-4zM4 13h4v1h-4z'/%3E%3Cpath fill='%23fff' d='M1 3h1v1h-1zM1 4h1v1h-1zM3 4h1v1h-1zM1 5h1v1h-1zM3 5h1v1h-1zM1 6h1v1h-1zM3 6h1v1h-1zM1 7h1v1h-1zM3 7h1v1h-1zM1 8h1v1h-1zM3 8h1v1h-1zM1 9h1v1h-1zM3 9h1v1h-1zM1 10h1v1h-1zM3 10h1v1h-1zM1 11h1v1h-1z'/%3E%3Cpath fill='%23FBD000' d='M5 5h1v6h-1z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    animation: coinSpin 1.5s ease-in-out infinite;
+}
+
+@keyframes coinSpin {
+    0%, 100% { transform: scaleX(1); }
+    50% { transform: scaleX(0.2); }
 }
 
 /* ==================== */
@@ -428,32 +622,63 @@ body {
     }
 }
 
-/* Mushroom decoration */
+/* Mario Stopwatch decoration - positioned to the left of TIME label */
 .timer-content::before {
     content: "";
-    position: absolute;
-    left: -25px;
-    top: 50%;
-    transform: translateY(-50%);
+    position: relative;
+    display: inline-block;
     width: 40px;
     height: 40px;
-    background: radial-gradient(circle at 50% 30%, #ff0000 0%, #cc0000 60%, #990000 100%);
-    border-radius: 50% 50% 40% 40%;
-    border: 3px solid #000;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    margin-right: 10px;
+    background:
+        /* Clock face */
+        radial-gradient(circle at 50% 50%, #fff 0%, #fff 60%, var(--mario-yellow) 60%, var(--mario-yellow) 100%);
+    border-radius: 50%;
+    border: 4px solid var(--mario-black);
+    box-shadow:
+        inset 0 -3px 0 rgba(0,0,0,0.2),
+        0 3px 6px rgba(0,0,0,0.4);
+    flex-shrink: 0;
 }
 
+/* Stopwatch button/crown on top - centered on clock */
 .timer-content::after {
     content: "";
     position: absolute;
-    left: -18px;
+    left: 34px;
+    top: 5px;
+    width: 10px;
+    height: 8px;
+    background: var(--mario-red);
+    border: 2px solid var(--mario-black);
+    border-radius: 2px 2px 0 0;
+}
+
+/* Clock hand - synced to timer, centered on clock face */
+.clock-hand {
+    position: absolute;
+    left: 39px;
     top: 50%;
-    transform: translateY(-30%);
+    width: 4px;
+    height: 14px;
+    background: var(--mario-red);
+    border: 1px solid var(--mario-black);
+    border-radius: 2px;
+    transform-origin: center bottom;
+    transform: translateX(-50%) rotate(calc(var(--seconds, 0) * 6deg));
+    margin-top: -14px;
+    z-index: 5;
+}
+
+.clock-hand::after {
+    content: "";
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 8px;
     height: 8px;
-    background: #fff;
+    background: var(--mario-red);
+    border: 2px solid var(--mario-black);
     border-radius: 50%;
-    box-shadow:
-        12px 0 0 #fff,
-        6px 8px 0 #fff;
 }

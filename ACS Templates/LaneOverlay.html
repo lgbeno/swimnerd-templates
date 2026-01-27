@@ -98,11 +98,58 @@
         .split-time {
             font-variant-numeric: tabular-nums;
         }
+
+        /* Pre-race lineup display */
+        .lineup-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            transform: scaleX(0);
+            transform-origin: left center;
+            opacity: 0;
+        }
+
+        .lineup-info {
+            display: flex;
+            flex: 1;
+            align-items: center;
+            padding: 0 10px;
+        }
+
+        .lineup-lane {
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .lineup-name {
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-right: 20px;
+        }
+
+        .lineup-team {
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
     <div class="lanes-container">
         <div class="lane-box" id="lane-8">
+            <div class="lineup-content" id="lineupContent-8">
+                <div class="lineup-lane" id="lineupLane-8"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-8"></span>
+                    <span class="lineup-team" id="lineupTeam-8"></span>
+                </div>
+            </div>
             <div class="lane-content" id="laneContent-8">
                 <div class="place-indicator" id="place-8"></div>
                 <div class="lane-info">
@@ -115,6 +162,13 @@
             </div>
         </div>
         <div class="lane-box" id="lane-7">
+            <div class="lineup-content" id="lineupContent-7">
+                <div class="lineup-lane" id="lineupLane-7"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-7"></span>
+                    <span class="lineup-team" id="lineupTeam-7"></span>
+                </div>
+            </div>
             <div class="lane-content" id="laneContent-7">
                 <div class="place-indicator" id="place-7"></div>
                 <div class="lane-info">
@@ -127,6 +181,13 @@
             </div>
         </div>
         <div class="lane-box" id="lane-6">
+            <div class="lineup-content" id="lineupContent-6">
+                <div class="lineup-lane" id="lineupLane-6"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-6"></span>
+                    <span class="lineup-team" id="lineupTeam-6"></span>
+                </div>
+            </div>
             <div class="lane-content" id="laneContent-6">
                 <div class="place-indicator" id="place-6"></div>
                 <div class="lane-info">
@@ -139,6 +200,13 @@
             </div>
         </div>
         <div class="lane-box" id="lane-5">
+            <div class="lineup-content" id="lineupContent-5">
+                <div class="lineup-lane" id="lineupLane-5"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-5"></span>
+                    <span class="lineup-team" id="lineupTeam-5"></span>
+                </div>
+            </div>
             <div class="lane-content" id="laneContent-5">
                 <div class="place-indicator" id="place-5"></div>
                 <div class="lane-info">
@@ -151,6 +219,13 @@
             </div>
         </div>
         <div class="lane-box" id="lane-4">
+            <div class="lineup-content" id="lineupContent-4">
+                <div class="lineup-lane" id="lineupLane-4"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-4"></span>
+                    <span class="lineup-team" id="lineupTeam-4"></span>
+                </div>
+            </div>
             <div class="lane-content" id="laneContent-4">
                 <div class="place-indicator" id="place-4"></div>
                 <div class="lane-info">
@@ -163,6 +238,13 @@
             </div>
         </div>
         <div class="lane-box" id="lane-3">
+            <div class="lineup-content" id="lineupContent-3">
+                <div class="lineup-lane" id="lineupLane-3"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-3"></span>
+                    <span class="lineup-team" id="lineupTeam-3"></span>
+                </div>
+            </div>
             <div class="lane-content" id="laneContent-3">
                 <div class="place-indicator" id="place-3"></div>
                 <div class="lane-info">
@@ -175,6 +257,13 @@
             </div>
         </div>
         <div class="lane-box" id="lane-2">
+            <div class="lineup-content" id="lineupContent-2">
+                <div class="lineup-lane" id="lineupLane-2"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-2"></span>
+                    <span class="lineup-team" id="lineupTeam-2"></span>
+                </div>
+            </div>
             <div class="lane-content" id="laneContent-2">
                 <div class="place-indicator" id="place-2"></div>
                 <div class="lane-info">
@@ -187,6 +276,13 @@
             </div>
         </div>
         <div class="lane-box" id="lane-1">
+            <div class="lineup-content" id="lineupContent-1">
+                <div class="lineup-lane" id="lineupLane-1"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-1"></span>
+                    <span class="lineup-team" id="lineupTeam-1"></span>
+                </div>
+            </div>
             <div class="lane-content" id="laneContent-1">
                 <div class="place-indicator" id="place-1"></div>
                 <div class="lane-info">
@@ -206,8 +302,13 @@
 
         let laneVisibility = new Array(NUM_LANES).fill(false);
         let splitVisibility = new Array(NUM_LANES).fill(false);
+        let lineupVisibility = new Array(NUM_LANES).fill(false);
         let splitTimeouts = new Array(NUM_LANES).fill(null);
         let lastSplitValue = new Array(NUM_LANES).fill(null);
+        let lastRunningTime = '';
+        let lastEventNumber = '';
+        let lastHeatNumber = '';
+        let raceInProgress = false;
 
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
@@ -231,7 +332,87 @@
         }
         connectWebSocket();
 
+        function isTimerRunning(time) {
+            return time &&
+                time.trim() !== "" &&
+                time.trim() !== ":  ." &&
+                time.trim() !== ": 0.0" &&
+                time.trim() !== "0.0" &&
+                time.trim() !== "0:00.0";
+        }
+
+        function resetAllLanes() {
+            for (let laneCounter = 0; laneCounter < NUM_LANES; laneCounter++) {
+                const laneNum = laneCounter + 1;
+                const laneContent = document.getElementById(`laneContent-${laneNum}`);
+                const splitContent = document.getElementById(`splitContent-${laneNum}`);
+                const lineupContent = document.getElementById(`lineupContent-${laneNum}`);
+                const swimmerName = document.getElementById(`swimmerName-${laneNum}`);
+                const finalTime = document.getElementById(`finalTime-${laneNum}`);
+                const placeIndicator = document.getElementById(`place-${laneNum}`);
+                const splitTime = document.getElementById(`splitTime-${laneNum}`);
+                const lineupLane = document.getElementById(`lineupLane-${laneNum}`);
+                const lineupName = document.getElementById(`lineupName-${laneNum}`);
+                const lineupTeam = document.getElementById(`lineupTeam-${laneNum}`);
+
+                // Hide and clear lane content
+                laneContent.classList.remove('visible', 'first-place', 'second-place', 'third-place');
+                laneContent.classList.add('hiding');
+                laneVisibility[laneCounter] = false;
+                swimmerName.textContent = '';
+                finalTime.textContent = '';
+                placeIndicator.textContent = '';
+
+                // Hide and clear split content
+                splitContent.classList.remove('visible');
+                splitContent.classList.add('hiding');
+                splitVisibility[laneCounter] = false;
+                splitTime.textContent = '';
+                if (splitTimeouts[laneCounter]) {
+                    clearTimeout(splitTimeouts[laneCounter]);
+                    splitTimeouts[laneCounter] = null;
+                }
+
+                // Hide and clear lineup content
+                lineupContent.classList.remove('visible');
+                lineupContent.classList.add('hiding');
+                lineupVisibility[laneCounter] = false;
+                lineupLane.textContent = '';
+                lineupName.textContent = '';
+                lineupTeam.textContent = '';
+
+                lastSplitValue[laneCounter] = null;
+            }
+            raceInProgress = false;
+        }
+
         function processLaneData(jsonData) {
+            const runningTime = jsonData.swimming.RunningTime;
+            const eventNumber = jsonData.swimming.EventNumber || '';
+            const heatNumber = jsonData.swimming.HeatNumber || '';
+            const timerActive = isTimerRunning(runningTime);
+
+            // Check if event or heat changed - reset everything for new race
+            const eventHeatChanged = (eventNumber !== lastEventNumber || heatNumber !== lastHeatNumber)
+                && (lastEventNumber !== '' || lastHeatNumber !== '');
+
+            if (eventHeatChanged) {
+                resetAllLanes();
+            }
+
+            lastEventNumber = eventNumber;
+            lastHeatNumber = heatNumber;
+
+            // Track if race has started
+            if (timerActive && !raceInProgress) {
+                raceInProgress = true;
+            }
+
+            // Show lineup when not in race, regardless of stale final times
+            const showLineup = !raceInProgress;
+
+            lastRunningTime = runningTime;
+
             for (let laneCounter = 0; laneCounter < NUM_LANES; laneCounter++) {
                 const laneNum = laneCounter + 1;
                 const laneData = jsonData.swimming.LaneAthleteTeam[laneCounter];
@@ -241,11 +422,40 @@
                 const placeIndicator = document.getElementById(`place-${laneNum}`);
                 const splitContent = document.getElementById(`splitContent-${laneNum}`);
                 const splitTime = document.getElementById(`splitTime-${laneNum}`);
+                const lineupContent = document.getElementById(`lineupContent-${laneNum}`);
+                const lineupLane = document.getElementById(`lineupLane-${laneNum}`);
+                const lineupName = document.getElementById(`lineupName-${laneNum}`);
+                const lineupTeam = document.getElementById(`lineupTeam-${laneNum}`);
 
                 const hasData = laneData.LaneNumber.trim() !== "";
                 const hasFinalTime = laneData.FinalTime && laneData.FinalTime.trim() !== "";
                 const hasSplitTime = laneData.SplitTime && laneData.SplitTime.trim() !== "" && laneData.SplitTime.trim() !== ".";
-                const shouldShowFinal = hasData && hasFinalTime;
+                const shouldShowFinal = hasData && hasFinalTime && raceInProgress;
+
+                // Pre-race lineup display (show when race not in progress, ignore stale final times)
+                if (hasData && showLineup) {
+                    lineupLane.textContent = laneData.LaneNumber;
+                    lineupName.textContent = laneData.AthleteName;
+                    lineupTeam.textContent = laneData.Team || '';
+                    if (!lineupVisibility[laneCounter]) {
+                        lineupContent.classList.remove('hiding');
+                        lineupContent.classList.add('visible');
+                        lineupVisibility[laneCounter] = true;
+                    }
+                } else {
+                    if (lineupVisibility[laneCounter]) {
+                        lineupContent.classList.remove('visible');
+                        lineupContent.classList.add('hiding');
+                        lineupVisibility[laneCounter] = false;
+                        setTimeout(() => {
+                            if (!lineupVisibility[laneCounter]) {
+                                lineupLane.textContent = '';
+                                lineupName.textContent = '';
+                                lineupTeam.textContent = '';
+                            }
+                        }, 300);
+                    }
+                }
 
                 if (shouldShowFinal) {
                     swimmerName.textContent = laneData.AthleteName;
@@ -296,7 +506,7 @@
                         }, 300);
                     }
 
-                    if (hasData && hasSplitTime) {
+                    if (hasData && hasSplitTime && raceInProgress) {
                         const isNewSplit = laneData.SplitTime !== lastSplitValue[laneCounter];
                         if (isNewSplit) {
                             lastSplitValue[laneCounter] = laneData.SplitTime;
