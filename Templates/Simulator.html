@@ -44,11 +44,15 @@
         /* Right Panel - Iframes */
         .preview-panel {
             flex: 1;
-            display: flex;
+            display: none;
             flex-direction: column;
             background: #2d2d44;
             padding: 10px;
             gap: 10px;
+        }
+
+        .preview-panel.visible {
+            display: flex;
         }
 
         .iframe-container {
@@ -226,6 +230,67 @@
             color: #888;
         }
 
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: #0f0f23;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .toggle-label {
+            font-size: 0.85rem;
+            color: #eee;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #888;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #00d4ff;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+            background-color: #fff;
+        }
+
         #raceStatus {
             margin-top: 8px;
             color: #ffaa00;
@@ -241,6 +306,14 @@
 
             <div class="status disconnected" id="status">
                 Using BroadcastChannel
+            </div>
+
+            <div class="toggle-container">
+                <span class="toggle-label">Show Preview</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="previewToggle" onchange="togglePreview()">
+                    <span class="toggle-slider"></span>
+                </label>
             </div>
 
             <div class="control-group">
@@ -691,6 +764,17 @@
 
         function updateRaceStatus(message) {
             document.getElementById('raceStatus').textContent = message;
+        }
+
+        // Toggle preview panel
+        function togglePreview() {
+            const previewPanel = document.querySelector('.preview-panel');
+            const toggle = document.getElementById('previewToggle');
+            if (toggle.checked) {
+                previewPanel.classList.add('visible');
+            } else {
+                previewPanel.classList.remove('visible');
+            }
         }
 
         // Initialize
