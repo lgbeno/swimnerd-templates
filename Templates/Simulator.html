@@ -389,15 +389,15 @@
         <div class="preview-panel">
             <div class="iframe-container header">
                 <span class="iframe-label">HEADER</span>
-                <iframe id="headerFrame" src="HeaderOverlay.html"></iframe>
+                <iframe id="headerFrame" data-src="HeaderOverlay.html"></iframe>
             </div>
             <div class="iframe-container lanes">
                 <span class="iframe-label">LANES</span>
-                <iframe id="lanesFrame" src="LaneOverlay.html"></iframe>
+                <iframe id="lanesFrame" data-src="LaneOverlay.html"></iframe>
             </div>
             <div class="iframe-container timer">
                 <span class="iframe-label">TIMER</span>
-                <iframe id="timerFrame" src="TimerOverlay.html"></iframe>
+                <iframe id="timerFrame" data-src="TimerOverlay.html"></iframe>
             </div>
         </div>
     </div>
@@ -770,9 +770,21 @@
         function togglePreview() {
             const previewPanel = document.querySelector('.preview-panel');
             const toggle = document.getElementById('previewToggle');
+            const iframes = document.querySelectorAll('.preview-panel iframe');
+
             if (toggle.checked) {
+                // Load iframes by setting src from data-src
+                iframes.forEach(iframe => {
+                    if (!iframe.src || iframe.src === 'about:blank') {
+                        iframe.src = iframe.dataset.src;
+                    }
+                });
                 previewPanel.classList.add('visible');
             } else {
+                // Unload iframes to stop scripts
+                iframes.forEach(iframe => {
+                    iframe.src = 'about:blank';
+                });
                 previewPanel.classList.remove('visible');
             }
         }

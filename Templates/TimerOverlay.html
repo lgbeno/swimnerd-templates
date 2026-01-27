@@ -53,10 +53,34 @@
             font-variant-numeric: tabular-nums;
             letter-spacing: 2px;
         }
+
+        /* Placeholder styling */
+        .placeholder-content {
+            padding: 15px 30px 15px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            opacity: 0.6;
+        }
+
+        .placeholder-content.hidden {
+            display: none;
+        }
+
+        .placeholder-text {
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
     <div class="timer-container">
+        <!-- Placeholder shown until first data received -->
+        <div class="placeholder-content timer-content visible" id="placeholder">
+            <span class="placeholder-text">Waiting for data...</span>
+        </div>
+
         <div class="timer-content" id="timerContent">
             <div class="clock-hand" id="clockHand"></div>
             <span class="timer-label">TIME</span>
@@ -66,6 +90,7 @@
 
     <script id="swimmingScript">
         let timerVisible = false;
+        let firstMessageReceived = false;
 
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
@@ -90,6 +115,12 @@
         connectWebSocket();
 
         function processTimerData(jsonData) {
+            // Hide placeholder on first message
+            if (!firstMessageReceived) {
+                firstMessageReceived = true;
+                document.getElementById('placeholder').classList.add('hidden');
+            }
+
             const timerContent = document.getElementById('timerContent');
             const runningTime = document.getElementById('runningTime');
             const clockHand = document.getElementById('clockHand');

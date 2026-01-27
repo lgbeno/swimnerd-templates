@@ -113,6 +113,41 @@
             display: inline;
         }
 
+        /* Placeholder styling */
+        .placeholder-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            height: 70px;
+        }
+
+        .placeholder-box {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+            opacity: 0.6;
+        }
+
+        .placeholder-box.event { width: 170px; }
+        .placeholder-box.heat { width: 130px; }
+        .placeholder-box.name { flex: 1; }
+
+        .placeholder-text {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .placeholder-container.hidden {
+            display: none;
+        }
+
         @keyframes marqueeScroll {
             0% {
                 transform: translateX(0);
@@ -124,6 +159,19 @@
     </style>
 </head>
 <body>
+    <!-- Placeholder shown until first data received -->
+    <div class="placeholder-container" id="placeholder">
+        <div class="placeholder-box event header-content visible">
+            <span class="placeholder-text">Waiting...</span>
+        </div>
+        <div class="placeholder-box heat header-content visible">
+            <span class="placeholder-text">Waiting...</span>
+        </div>
+        <div class="placeholder-box name header-content visible">
+            <span class="placeholder-text">Waiting for data...</span>
+        </div>
+    </div>
+
     <div class="header-container">
         <div class="header-box fixed" id="eventBox">
             <div class="header-content" id="eventContent">
@@ -160,6 +208,7 @@
         let marioRunning = false;
         let eventExploding = false;
         let heatExploding = false;
+        let firstMessageReceived = false;
 
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
@@ -246,6 +295,12 @@
         }
 
         function processHeaderData(jsonData) {
+            // Hide placeholder on first message
+            if (!firstMessageReceived) {
+                firstMessageReceived = true;
+                document.getElementById('placeholder').classList.add('hidden');
+            }
+
             const eventContent = document.getElementById('eventContent');
             const heatContent = document.getElementById('heatContent');
             const nameContent = document.getElementById('nameContent');

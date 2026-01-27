@@ -138,9 +138,51 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
+
+        /* Placeholder styling */
+        .placeholder-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .placeholder-container.hidden {
+            display: none;
+        }
+
+        .placeholder-lane {
+            width: 100%;
+            max-width: 400px;
+            margin: 4px 0;
+            padding: 15px 20px;
+            opacity: 0.6;
+        }
+
+        .placeholder-text {
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
+    <!-- Placeholder shown until first data received -->
+    <div class="placeholder-container" id="placeholder">
+        <div class="placeholder-lane lineup-content visible">
+            <span class="placeholder-text">Waiting for data...</span>
+        </div>
+        <div class="placeholder-lane lineup-content visible">
+            <span class="placeholder-text">Lane overlay ready</span>
+        </div>
+    </div>
+
     <div class="lanes-container">
         <div class="lane-box" id="lane-8">
             <div class="lineup-content" id="lineupContent-8">
@@ -309,6 +351,7 @@
         let lastEventNumber = '';
         let lastHeatNumber = '';
         let raceInProgress = false;
+        let firstMessageReceived = false;
 
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
@@ -387,6 +430,12 @@
         }
 
         function processLaneData(jsonData) {
+            // Hide placeholder on first message
+            if (!firstMessageReceived) {
+                firstMessageReceived = true;
+                document.getElementById('placeholder').classList.add('hidden');
+            }
+
             const runningTime = jsonData.swimming.RunningTime;
             const eventNumber = jsonData.swimming.EventNumber || '';
             const heatNumber = jsonData.swimming.HeatNumber || '';
