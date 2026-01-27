@@ -357,6 +357,15 @@
                 <div id="raceStatus"></div>
             </div>
 
+            <div class="control-group">
+                <h3>Meet Simulation</h3>
+                <div class="button-row">
+                    <button class="btn-success" onclick="startMeetSimulation()">Run Meet</button>
+                    <button class="btn-danger" onclick="stopMeetSimulation()">Stop Meet</button>
+                </div>
+                <div id="meetStatus" style="margin-top: 8px; color: #00d4ff; font-size: 0.8rem;"></div>
+            </div>
+
             <div class="control-group lanes-editor">
                 <h3>Lane Data</h3>
                 <div class="lane-row header">
@@ -421,27 +430,55 @@
                     document.getElementById('status').className = 'status connected';
                 };
                 wsClient.onclose = () => {
-                    document.getElementById('status').textContent = 'Using BroadcastChannel';
+                    document.getElementById('status').textContent = 'WebSocket disconnected - retrying...';
                     document.getElementById('status').className = 'status disconnected';
                     wsClient = null;
+                    setTimeout(connectWebSocket, 3000);
                 };
                 wsClient.onerror = () => {
                     wsClient = null;
                 };
             } catch (e) {
                 console.log('WebSocket not available, using BroadcastChannel only');
+                setTimeout(connectWebSocket, 3000);
             }
         }
         connectWebSocket();
 
-        // Sample swimmer names
+        // Sample swimmer names (80+ for full meet simulation)
         const sampleNames = [
             "Michael Phelps", "Katie Ledecky", "Caeleb Dressel", "Simone Manuel",
             "Ryan Lochte", "Missy Franklin", "Nathan Adrian", "Natalie Coughlin",
-            "Adam Peaty", "Sarah Sjostrom", "Chad le Clos", "Penny Oleksiak"
+            "Adam Peaty", "Sarah Sjostrom", "Chad le Clos", "Penny Oleksiak",
+            "Sun Yang", "Federica Pellegrini", "Cameron McEvoy", "Ranomi Kromowidjojo",
+            "Florent Manaudou", "Cate Campbell", "Kyle Chalmers", "Emma McKeon",
+            "Kosuke Hagino", "Katinka Hosszu", "Tom Shields", "Siobhan Haughey",
+            "Kristof Milak", "Ariarne Titmus", "Leon Marchand", "Summer McIntosh",
+            "David Popovici", "Mollie O'Callaghan", "Pan Zhanle", "Kaylee McKeown",
+            "Thomas Ceccon", "Regan Smith", "Noe Ponti", "Kate Douglass",
+            "Josh Liendo", "Torri Huske", "Matt Richards", "Alex Walsh",
+            "Duncan Scott", "Taylor Ruck", "Hwang Sun-woo", "Lilly King",
+            "Ahmed Hafnaoui", "Annie Lazor", "Brooks Curry", "Phoebe Bacon",
+            "Jack Alexy", "Claire Curzan", "Hunter Armstrong", "Gretchen Walsh",
+            "Nic Fink", "Katharine Berkoff", "Carson Foster", "Leah Smith",
+            "Shaine Casas", "Erika Brown", "Ryan Murphy", "Lydia Jacoby",
+            "Bobby Finke", "Katie Grimes", "Kieran Smith", "Paige Madden",
+            "Trenton Julian", "Bella Sims", "Luke Hobson", "Erin Gemmell",
+            "Chris Guiliano", "Alex Shackell", "Daniel Diehl", "Lillie Nordmann",
+            "Jake Mitchell", "Anna Peplowski", "Aaron Shackell", "Addison Sauickie",
+            "Luca Urlando", "Lindsay Looney", "Gabriel Jett", "Emma Weber"
         ];
 
-        const sampleTeams = ["USA", "AUS", "GBR", "CAN", "GER", "SWE", "RSA", "JPN"];
+        const sampleTeams = ["USA", "AUS", "GBR", "CAN", "GER", "SWE", "RSA", "JPN", "HUN", "ITA", "FRA", "CHN", "ROU", "NED", "BRA", "KOR"];
+
+        // Event names for meet simulation
+        const eventNames = [
+            "100m Freestyle",
+            "200m Backstroke",
+            "100m Breaststroke",
+            "200m Butterfly",
+            "400m Individual Medley"
+        ];
 
         // Initialize lane editor
         function initLanes() {
@@ -723,15 +760,23 @@
                 raceTimeouts.push(tFinal);
             }
 
-            // End race
+            // End race - stop timer when last swimmer finishes
             const maxTime = Math.max(...laneFinalTimes);
             const tEnd = setTimeout(() => {
                 if (!raceSimulationRunning) return;
                 updateRaceStatus('Race complete!');
-                stopTimer();
+                stopTimerKeepTime();
                 raceSimulationRunning = false;
-            }, (maxTime + 3) * 1000);
+            }, maxTime * 1000);
             raceTimeouts.push(tEnd);
+        }
+
+        function stopTimerKeepTime() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            // Don't reset the time display - keep showing final time
         }
 
         function stopRaceSimulation() {
@@ -764,6 +809,187 @@
 
         function updateRaceStatus(message) {
             document.getElementById('raceStatus').textContent = message;
+        }
+
+        // Meet Simulation
+        let meetSimulationRunning = false;
+        let currentEventIndex = 0;
+        let currentHeatIndex = 0;
+        let meetSwimmerPool = [];
+        const HEATS_PER_EVENT = 2;
+        const TOTAL_EVENTS = 5;
+        const LINEUP_DISPLAY_TIME = 5000; // 5 seconds to show lineup before race
+        const POST_RACE_DISPLAY_TIME = 8000; // 8 seconds to show results after race
+
+        function startMeetSimulation() {
+            if (meetSimulationRunning) return;
+            meetSimulationRunning = true;
+            currentEventIndex = 0;
+            currentHeatIndex = 0;
+
+            // Shuffle all swimmers for the meet
+            meetSwimmerPool = [...sampleNames].sort(() => Math.random() - 0.5);
+
+            updateMeetStatus(`Starting meet: ${TOTAL_EVENTS} events, ${HEATS_PER_EVENT} heats each`);
+            runNextHeat();
+        }
+
+        function stopMeetSimulation() {
+            meetSimulationRunning = false;
+            stopRaceSimulation();
+            updateMeetStatus('Meet stopped');
+        }
+
+        function runNextHeat() {
+            if (!meetSimulationRunning) return;
+
+            // Check if meet is complete
+            if (currentEventIndex >= TOTAL_EVENTS) {
+                meetSimulationRunning = false;
+                updateMeetStatus('Meet complete!');
+                return;
+            }
+
+            const eventNum = currentEventIndex + 1;
+            const heatNum = currentHeatIndex + 1;
+            const eventName = eventNames[currentEventIndex];
+
+            // Update event info
+            document.getElementById('eventNumber').value = eventNum;
+            document.getElementById('heatNumber').value = heatNum;
+            document.getElementById('eventName').value = eventName;
+
+            // Get swimmers for this heat (8 per heat)
+            const heatStartIndex = (currentEventIndex * HEATS_PER_EVENT + currentHeatIndex) * NUM_LANES;
+            const heatSwimmers = meetSwimmerPool.slice(heatStartIndex, heatStartIndex + NUM_LANES);
+
+            // If we don't have enough swimmers, wrap around
+            while (heatSwimmers.length < NUM_LANES) {
+                const wrapIndex = heatSwimmers.length % meetSwimmerPool.length;
+                heatSwimmers.push(meetSwimmerPool[wrapIndex]);
+            }
+
+            // Assign random teams
+            const shuffledTeams = [...sampleTeams].sort(() => Math.random() - 0.5);
+
+            // Clear times and set up lineup
+            for (let i = 1; i <= NUM_LANES; i++) {
+                document.getElementById(`name-${i}`).value = heatSwimmers[i - 1] || `Swimmer ${i}`;
+                document.getElementById(`team-${i}`).value = shuffledTeams[(i - 1) % sampleTeams.length];
+                document.getElementById(`finalTime-${i}`).value = '';
+                document.getElementById(`splitTime-${i}`).value = '.';
+                document.getElementById(`place-${i}`).value = ' ';
+            }
+
+            updateMeetStatus(`Event ${eventNum}: ${eventName} - Heat ${heatNum} (Lineup)`);
+
+            // Send lineup data
+            sendData();
+
+            // Wait for lineup display, then start race
+            setTimeout(() => {
+                if (!meetSimulationRunning) return;
+                updateMeetStatus(`Event ${eventNum}: ${eventName} - Heat ${heatNum} (Racing)`);
+                startHeatRace();
+            }, LINEUP_DISPLAY_TIME);
+        }
+
+        function startHeatRace() {
+            if (!meetSimulationRunning) return;
+
+            // Similar to startRaceSimulation but calls onHeatComplete when done
+            raceSimulationRunning = true;
+            raceTimeouts.forEach(t => clearTimeout(t));
+            raceTimeouts = [];
+
+            laneSplitTimes = [];
+            laneFinalTimes = [];
+
+            for (let i = 1; i <= NUM_LANES; i++) {
+                document.getElementById(`finalTime-${i}`).value = '';
+                document.getElementById(`splitTime-${i}`).value = '.';
+                document.getElementById(`place-${i}`).value = ' ';
+
+                const baseLapTime = 13 + Math.random() * 2;
+                const splitDeltas = [];
+                const splitCumulative = [];
+                let cumulative = 0;
+
+                const splitLap = baseLapTime + (Math.random() - 0.5) * 2;
+                cumulative += splitLap;
+                splitDeltas.push(splitLap);
+                splitCumulative.push(cumulative);
+
+                const finalLap = baseLapTime + 3 + Math.random() * 4;
+                cumulative += finalLap;
+                laneSplitTimes.push({ deltas: splitDeltas, cumulative: splitCumulative });
+                laneFinalTimes.push(cumulative);
+            }
+
+            stopTimer();
+            startTimer();
+            sendDataContinuous();
+
+            for (let lane = 1; lane <= NUM_LANES; lane++) {
+                const { deltas, cumulative } = laneSplitTimes[lane - 1];
+                const finalTime = laneFinalTimes[lane - 1];
+
+                const tSplit = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`splitTime-${lane}`).value = deltas[0].toFixed(2);
+                }, cumulative[0] * 1000);
+                raceTimeouts.push(tSplit);
+
+                const tClear = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`splitTime-${lane}`).value = '.';
+                }, (cumulative[0] + 1.5) * 1000);
+                raceTimeouts.push(tClear);
+
+                const tFinal = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    const mins = Math.floor(finalTime / 60);
+                    const secs = (finalTime % 60).toFixed(2);
+                    document.getElementById(`finalTime-${lane}`).value = `${mins}:${secs.padStart(5, '0')}`;
+                    document.getElementById(`splitTime-${lane}`).value = '.';
+                    updatePlaces();
+                }, finalTime * 1000);
+                raceTimeouts.push(tFinal);
+            }
+
+            const maxTime = Math.max(...laneFinalTimes);
+            const tEnd = setTimeout(() => {
+                if (!raceSimulationRunning) return;
+                stopTimerKeepTime();
+                raceSimulationRunning = false;
+                onHeatComplete();
+            }, maxTime * 1000);
+            raceTimeouts.push(tEnd);
+        }
+
+        function onHeatComplete() {
+            if (!meetSimulationRunning) return;
+
+            const eventNum = currentEventIndex + 1;
+            const heatNum = currentHeatIndex + 1;
+            updateMeetStatus(`Event ${eventNum}: ${eventNames[currentEventIndex]} - Heat ${heatNum} (Results)`);
+
+            // Move to next heat or event
+            currentHeatIndex++;
+            if (currentHeatIndex >= HEATS_PER_EVENT) {
+                currentHeatIndex = 0;
+                currentEventIndex++;
+            }
+
+            // Wait to display results, then run next heat
+            setTimeout(() => {
+                if (!meetSimulationRunning) return;
+                runNextHeat();
+            }, POST_RACE_DISPLAY_TIME);
+        }
+
+        function updateMeetStatus(message) {
+            document.getElementById('meetStatus').textContent = message;
         }
 
         // Toggle preview panel
