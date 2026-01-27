@@ -1,0 +1,176 @@
+
+.roboto-body {
+    font-family: "Roboto", serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-variation-settings:
+      "wdth" 100;
+  }
+
+.row::after {
+    content: "";
+    clear: both;
+    display: table;
+    height: 60px;
+}
+
+.rowSmall {
+    content: "";
+    clear: both;
+    display: table;
+    height: 5px;
+}
+
+[class*="col-"] {
+    float: left;
+}
+
+@keyframes scrollText {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+.col-1 {width: 10%;}
+.col-2 {width: 30%;}
+.col-3 {width: 50%;}
+.col-4 {width: 33.33%;}
+.col-5 {width: 41.66%;}
+.col-6 {width: 70%;}
+.col-7 {width: 58.33%;}
+.col-8 {width: 66.66%;}
+.col-9 {width: 75%;}
+.col-10 {width: 83.33%;}
+.col-11 {width: 91.66%;}
+.col-12 {width: 100%;}
+
+.eventName {
+    text-align: left;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+    font-size: 4vw;
+}
+.eventNameSmall {
+    text-align: left;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+    font-size: 1vw;
+}
+.laneNumberOdd {
+    text-align: center;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+    font-size: 3em;
+}
+.laneNumberOddSmall {
+    text-align: center;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+    font-size: 1vw;
+}
+.placeNumber {
+    text-align: center;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+    font-size: 3em;
+}
+.placeNumberSmall {
+    text-align: center;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+    font-size: 1vw;
+}
+.athleteNameEven {
+    text-align: left;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+    font-size: 3em;
+}
+.athleteNameOdd {
+    text-align: left;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+    font-size: 3em;
+}
+.athleteNameOddSmall {
+    text-align: left;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+    font-size: 1vw;
+}
+.teamNameOddSmall {
+    text-align: left;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+    font-size: 1vw;
+}
+.splitTimeSmall {
+    text-align: center;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box; /* Include padding in the element's total width and height */
+    padding: 0 10px; /* Add some padding if needed */
+    font-size: 1vw;
+}
+.finalTimeOddSmall {
+    text-align: center;
+    color: white;
+    background-color: rgba(0,0,0,.7);
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box; /* Include padding in the element's total width and height */
+    padding: 0 10px; /* Add some padding if needed */
+    font-size: 1vw;
+}
+.bottomLeft {
+    font-size: 4vw;
+    font-family: Arial;
+    color: white;
+    position: fixed; /* Ensure it's positioned correctly */
+    left: 0; /* Align to the left */
+    bottom: 0; /* Align to the bottom */
+    padding-left: 10px; /* Add some padding if needed */
+    box-sizing: border-box; /* Include padding in the element's total width and height */
+    background-color: rgba(0,0,0,.7);
+    width: auto;
+}
+table.lowerRight {
+    font-size:4vw;
+    font-family:Arial;
+    color:white;
+    position:fixed;
+    bottom: 0;
+    right: 0;
+    background-color: rgba(0,0,0,0);
+    width: 30%;
+}
+.topRight {
+    font-size: 4vw;
+    position: absolute; /* Ensure it's positioned correctly */
+    right: 0; /* Align to the right */
+    padding-right: 10px; /* Add some padding if needed */
+    box-sizing: border-box; /* Include padding in the element's total width and height */
+    text-align: right;
+    background-color: rgba(0,0,0,.7);
+    color: white;
+    width: auto;
+}
+h2 {
+    font-size:2vw;
+}
+h3 {
+    font-size:1vw;
+}
