@@ -447,14 +447,25 @@
 
             if (eventHeatChanged) {
                 resetAllLanes();
+                // Don't start race based on stale timer - wait for timer under 2 seconds
             }
 
             lastEventNumber = eventNumber;
             lastHeatNumber = heatNumber;
 
-            // Track if race has started
+            // Track if race has started - only if timer is actively running (under 2 seconds means fresh start)
             if (timerActive && !raceInProgress) {
-                raceInProgress = true;
+                // Parse time to check if it's a fresh race start
+                const parts = runningTime.split(':');
+                if (parts.length === 2) {
+                    const mins = parseInt(parts[0]) || 0;
+                    const secs = parseFloat(parts[1]) || 0;
+                    const totalSeconds = mins * 60 + secs;
+                    // Only start race if timer is under 2 seconds (fresh start)
+                    if (totalSeconds < 2) {
+                        raceInProgress = true;
+                    }
+                }
             }
 
             // Show lineup when not in race, regardless of stale final times
