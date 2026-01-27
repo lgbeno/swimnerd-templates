@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Header Overlay</title>
+
+    <!-- THEME: Change this line to switch themes -->
+    <link href="themes/mario-theme.css" rel="stylesheet">
+    <!-- Alternative: <link href="themes/default-theme.css" rel="stylesheet"> -->
+
     <style>
+        /* ==================== */
+        /* STRUCTURAL CSS ONLY */
+        /* (Layout, positioning) */
+        /* ==================== */
         * {
             margin: 0;
             padding: 0;
@@ -13,7 +22,6 @@
 
         body {
             background: transparent;
-            font-family: 'Arial', sans-serif;
             height: 100vh;
             overflow: hidden;
         }
@@ -35,7 +43,7 @@
         }
 
         .header-box.fixed {
-            width: 180px;
+            width: 200px;
             flex-shrink: 0;
         }
 
@@ -44,80 +52,27 @@
         }
 
         .header-content {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 15px 25px;
+            height: 100%;
             display: flex;
             align-items: center;
-            height: 100%;
-            transform: scaleX(0);
-            transform-origin: left center;
+            padding: 0 20px;
+            transform: translateY(-100%);
             opacity: 0;
         }
 
-        .header-content.visible {
-            animation: wipeIn 0.4s ease-out forwards;
-        }
-
-        .header-content.hiding {
-            animation: wipeOut 0.3s ease-in forwards;
-        }
-
-        /* Stagger the animations */
-        #eventBox .header-content.visible {
-            animation-delay: 0s;
-        }
-
-        #heatBox .header-content.visible {
-            animation-delay: 0.1s;
-        }
-
-        #nameBox .header-content.visible {
-            animation-delay: 0.2s;
-        }
-
-        @keyframes wipeIn {
-            0% {
-                transform: scaleX(0);
-                opacity: 0;
-            }
-            100% {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-        }
-
-        @keyframes wipeOut {
-            0% {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-            100% {
-                transform: scaleX(0);
-                opacity: 0;
-            }
-        }
-
         .label {
-            font-size: 1.8rem;
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.7);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-right: 15px;
+            margin-right: 10px;
         }
 
         .value {
-            font-size: 2.5rem;
             font-weight: bold;
-            color: rgba(255, 255, 255, 0.7);
         }
 
         .event-name {
-            font-size: 2rem;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.7);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
         }
     </style>
 </head>
@@ -147,39 +102,24 @@
         let heatVisible = false;
         let nameVisible = false;
 
-        // BroadcastChannel for tab-to-tab communication (Simulator)
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
-            console.log('BroadcastChannel data received');
             processHeaderData(e.data);
         };
 
-        // WebSocket connection for production use
         let client = null;
         function connectWebSocket() {
             try {
                 client = new WebSocket("ws://localhost:8080/");
-
-                client.onerror = function() {
-                    console.log('WebSocket Connection Error');
-                };
-
-                client.onopen = function() {
-                    console.log('WebSocket Client Connected');
-                };
-
-                client.onclose = function() {
+                client.onerror = () => console.log('WebSocket Connection Error');
+                client.onopen = () => console.log('WebSocket Client Connected');
+                client.onclose = () => {
                     console.log('WebSocket Client Closed');
-                    // Retry connection after 3 seconds
                     setTimeout(connectWebSocket, 3000);
                 };
-
-                client.onmessage = function(e) {
-                    const jsonData = JSON.parse(e.data);
-                    processHeaderData(jsonData);
-                };
+                client.onmessage = (e) => processHeaderData(JSON.parse(e.data));
             } catch (e) {
-                console.log('WebSocket not available, using BroadcastChannel only');
+                console.log('WebSocket not available');
             }
         }
         connectWebSocket();
@@ -196,7 +136,6 @@
             const heatNum = jsonData.swimming.HeatNumber;
             const name = jsonData.swimming.EventName;
 
-            // Handle Event box
             if (eventNum) {
                 eventNumberEl.textContent = eventNum;
                 if (!eventVisible) {
@@ -209,13 +148,10 @@
                     eventContent.classList.remove('visible');
                     eventContent.classList.add('hiding');
                     eventVisible = false;
-                    setTimeout(() => {
-                        if (!eventVisible) eventNumberEl.textContent = '';
-                    }, 300);
+                    setTimeout(() => { if (!eventVisible) eventNumberEl.textContent = ''; }, 300);
                 }
             }
 
-            // Handle Heat box
             if (heatNum) {
                 heatNumberEl.textContent = heatNum;
                 if (!heatVisible) {
@@ -228,13 +164,10 @@
                     heatContent.classList.remove('visible');
                     heatContent.classList.add('hiding');
                     heatVisible = false;
-                    setTimeout(() => {
-                        if (!heatVisible) heatNumberEl.textContent = '';
-                    }, 300);
+                    setTimeout(() => { if (!heatVisible) heatNumberEl.textContent = ''; }, 300);
                 }
             }
 
-            // Handle Event Name box
             if (name) {
                 eventNameEl.textContent = name;
                 if (!nameVisible) {
@@ -247,9 +180,7 @@
                     nameContent.classList.remove('visible');
                     nameContent.classList.add('hiding');
                     nameVisible = false;
-                    setTimeout(() => {
-                        if (!nameVisible) eventNameEl.textContent = '';
-                    }, 300);
+                    setTimeout(() => { if (!nameVisible) eventNameEl.textContent = ''; }, 300);
                 }
             }
         }

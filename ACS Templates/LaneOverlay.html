@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lane Overlay - 8 Lanes</title>
+    <title>Lane Overlay</title>
+
+    <!-- THEME: Change this line to switch themes -->
+    <link href="themes/mario-theme.css" rel="stylesheet">
+    <!-- Alternative: <link href="themes/default-theme.css" rel="stylesheet"> -->
+
     <style>
+        /* ==================== */
+        /* STRUCTURAL CSS ONLY */
+        /* (Layout, positioning) */
+        /* ==================== */
         * {
             margin: 0;
             padding: 0;
@@ -13,7 +22,6 @@
 
         body {
             background: transparent;
-            font-family: 'Arial', sans-serif;
             height: 100vh;
             overflow: hidden;
         }
@@ -39,7 +47,6 @@
             top: 0;
             height: 100%;
             width: 100%;
-            background: rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             padding: 0 20px;
@@ -48,37 +55,6 @@
             opacity: 0;
             transition: none;
         }
-
-        .lane-content.visible {
-            animation: wipeIn 0.4s ease-out forwards;
-        }
-
-        .lane-content.hiding {
-            animation: wipeOut 0.3s ease-in forwards;
-        }
-
-        @keyframes wipeIn {
-            0% {
-                transform: scaleX(0);
-                opacity: 0;
-            }
-            100% {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-        }
-
-        @keyframes wipeOut {
-            0% {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-            100% {
-                transform: scaleX(0);
-                opacity: 0;
-            }
-        }
-
 
         .lane-info {
             display: flex;
@@ -89,49 +65,28 @@
         }
 
         .place-indicator {
-            font-size: 2.5rem;
             font-weight: bold;
-            color: rgba(255, 255, 255, 0.7);
             min-width: 80px;
             text-align: center;
             margin-right: 15px;
         }
 
         .swimmer-name {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.7);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         .final-time {
-            font-size: 2.8rem;
-            font-weight: bold;
-            color: rgba(255, 255, 255, 0.7);
             font-variant-numeric: tabular-nums;
             min-width: 200px;
             text-align: right;
         }
 
-        /* First place highlight */
-        .lane-content.first-place {
-            background: rgba(255, 215, 0, 0.3);
-        }
-
-        .lane-content.first-place .swimmer-name,
-        .lane-content.first-place .final-time,
-        .lane-content.first-place .place-indicator {
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        /* Split time - right aligned, wipes from right */
         .split-content {
             position: absolute;
             right: 0;
             top: 0;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             padding: 0 20px;
@@ -140,40 +95,7 @@
             opacity: 0;
         }
 
-        .split-content.visible {
-            animation: wipeInRight 0.4s ease-out forwards;
-        }
-
-        .split-content.hiding {
-            animation: wipeOutRight 0.3s ease-in forwards;
-        }
-
-        @keyframes wipeInRight {
-            0% {
-                transform: scaleX(0);
-                opacity: 0;
-            }
-            100% {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-        }
-
-        @keyframes wipeOutRight {
-            0% {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-            100% {
-                transform: scaleX(0);
-                opacity: 0;
-            }
-        }
-
         .split-time {
-            font-size: 2.8rem;
-            font-weight: bold;
-            color: rgba(255, 255, 255, 0.7);
             font-variant-numeric: tabular-nums;
         }
     </style>
@@ -280,47 +202,31 @@
 
     <script id="swimmingScript" numberOfLanes="8">
         const NUM_LANES = 8;
-        const SPLIT_DISPLAY_PERCENT = 0.4; // Show split for 40% of split time value
+        const SPLIT_DISPLAY_PERCENT = 0.4;
 
-        // Track lane visibility state
         let laneVisibility = new Array(NUM_LANES).fill(false);
         let splitVisibility = new Array(NUM_LANES).fill(false);
         let splitTimeouts = new Array(NUM_LANES).fill(null);
         let lastSplitValue = new Array(NUM_LANES).fill(null);
 
-        // BroadcastChannel for tab-to-tab communication (Simulator)
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
-            console.log('BroadcastChannel data received');
             processLaneData(e.data);
         };
 
-        // WebSocket connection for production use
         let client = null;
         function connectWebSocket() {
             try {
                 client = new WebSocket("ws://localhost:8080/");
-
-                client.onerror = function() {
-                    console.log('WebSocket Connection Error');
-                };
-
-                client.onopen = function() {
-                    console.log('WebSocket Client Connected');
-                };
-
-                client.onclose = function() {
+                client.onerror = () => console.log('WebSocket Connection Error');
+                client.onopen = () => console.log('WebSocket Client Connected');
+                client.onclose = () => {
                     console.log('WebSocket Client Closed');
-                    // Retry connection after 3 seconds
                     setTimeout(connectWebSocket, 3000);
                 };
-
-                client.onmessage = function(e) {
-                    const jsonData = JSON.parse(e.data);
-                    processLaneData(jsonData);
-                };
+                client.onmessage = (e) => processLaneData(JSON.parse(e.data));
             } catch (e) {
-                console.log('WebSocket not available, using BroadcastChannel only');
+                console.log('WebSocket not available');
             }
         }
         connectWebSocket();
@@ -336,119 +242,84 @@
                 const splitContent = document.getElementById(`splitContent-${laneNum}`);
                 const splitTime = document.getElementById(`splitTime-${laneNum}`);
 
-                // Check if lane has data
                 const hasData = laneData.LaneNumber.trim() !== "";
                 const hasFinalTime = laneData.FinalTime && laneData.FinalTime.trim() !== "";
-                const hasSplitTime = laneData.SplitTime &&
-                    laneData.SplitTime.trim() !== "" &&
-                    laneData.SplitTime.trim() !== ".";
-
-                // Show final time overlay (with name, place, time)
+                const hasSplitTime = laneData.SplitTime && laneData.SplitTime.trim() !== "" && laneData.SplitTime.trim() !== ".";
                 const shouldShowFinal = hasData && hasFinalTime;
 
                 if (shouldShowFinal) {
-                    // Update content
                     swimmerName.textContent = laneData.AthleteName;
                     finalTime.textContent = laneData.FinalTime;
+                    laneContent.classList.remove('first-place', 'second-place', 'third-place');
 
-                    // Show place if available
                     if (laneData.Place && laneData.Place.trim() !== "" && laneData.Place.trim() !== " ") {
                         placeIndicator.textContent = getPlaceText(laneData.Place.trim());
-
-                        // Highlight first place
-                        if (laneData.Place.trim() === "1") {
-                            laneContent.classList.add('first-place');
-                        } else {
-                            laneContent.classList.remove('first-place');
-                        }
+                        const place = laneData.Place.trim();
+                        if (place === "1") laneContent.classList.add('first-place');
+                        else if (place === "2") laneContent.classList.add('second-place');
+                        else if (place === "3") laneContent.classList.add('third-place');
                     } else {
                         placeIndicator.textContent = "";
-                        laneContent.classList.remove('first-place');
                     }
 
-                    // Animate in if not already visible
                     if (!laneVisibility[laneCounter]) {
                         laneContent.classList.remove('hiding');
                         laneContent.classList.add('visible');
                         laneVisibility[laneCounter] = true;
                     }
 
-                    // Hide split when final is shown
                     if (splitVisibility[laneCounter]) {
-                        // Clear the split timeout
                         if (splitTimeouts[laneCounter]) {
                             clearTimeout(splitTimeouts[laneCounter]);
                             splitTimeouts[laneCounter] = null;
                         }
                         lastSplitValue[laneCounter] = null;
-
                         splitContent.classList.remove('visible');
                         splitContent.classList.add('hiding');
                         splitVisibility[laneCounter] = false;
                         setTimeout(() => {
-                            if (!splitVisibility[laneCounter]) {
-                                splitTime.textContent = "";
-                            }
+                            if (!splitVisibility[laneCounter]) splitTime.textContent = "";
                         }, 300);
                     }
                 } else {
-                    // Hide final time overlay
                     if (laneVisibility[laneCounter]) {
                         laneContent.classList.remove('visible');
                         laneContent.classList.add('hiding');
                         laneVisibility[laneCounter] = false;
-
                         setTimeout(() => {
                             if (!laneVisibility[laneCounter]) {
                                 swimmerName.textContent = "";
                                 finalTime.textContent = "";
                                 placeIndicator.textContent = "";
-                                laneContent.classList.remove('first-place');
+                                laneContent.classList.remove('first-place', 'second-place', 'third-place');
                             }
                         }, 300);
                     }
 
-                    // Show split time overlay (only split time, no final)
                     if (hasData && hasSplitTime) {
-                        // Check if this is a new split value
                         const isNewSplit = laneData.SplitTime !== lastSplitValue[laneCounter];
-
                         if (isNewSplit) {
                             lastSplitValue[laneCounter] = laneData.SplitTime;
                             splitTime.textContent = laneData.SplitTime;
-
-                            // Clear any existing timeout
-                            if (splitTimeouts[laneCounter]) {
-                                clearTimeout(splitTimeouts[laneCounter]);
-                            }
-
-                            // Show split if not already visible
+                            if (splitTimeouts[laneCounter]) clearTimeout(splitTimeouts[laneCounter]);
                             if (!splitVisibility[laneCounter]) {
                                 splitContent.classList.remove('hiding');
                                 splitContent.classList.add('visible');
                                 splitVisibility[laneCounter] = true;
                             }
-
-                            // Calculate display duration as 40% of split time value
                             const splitSeconds = parseFloat(laneData.SplitTime) || 5;
                             const displayDuration = splitSeconds * SPLIT_DISPLAY_PERCENT * 1000;
-
-                            // Set timeout to hide after calculated duration
                             splitTimeouts[laneCounter] = setTimeout(() => {
                                 splitContent.classList.remove('visible');
                                 splitContent.classList.add('hiding');
                                 splitVisibility[laneCounter] = false;
                                 lastSplitValue[laneCounter] = null;
-
                                 setTimeout(() => {
-                                    if (!splitVisibility[laneCounter]) {
-                                        splitTime.textContent = "";
-                                    }
+                                    if (!splitVisibility[laneCounter]) splitTime.textContent = "";
                                 }, 300);
                             }, displayDuration);
                         }
                     }
-                    // Don't hide split based on JSON - let the timeout handle it
                 }
             }
         }
@@ -456,7 +327,6 @@
         function getPlaceText(place) {
             const num = parseInt(place);
             if (isNaN(num)) return place;
-
             const suffixes = ['th', 'st', 'nd', 'rd'];
             const v = num % 100;
             return num + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);

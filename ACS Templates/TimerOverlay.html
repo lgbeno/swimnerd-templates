@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timer Overlay</title>
+
+    <!-- THEME: Change this line to switch themes -->
+    <link href="themes/mario-theme.css" rel="stylesheet">
+    <!-- Alternative: <link href="themes/default-theme.css" rel="stylesheet"> -->
+
     <style>
+        /* ==================== */
+        /* STRUCTURAL CSS ONLY */
+        /* (Layout, positioning) */
+        /* ==================== */
         * {
             margin: 0;
             padding: 0;
@@ -13,7 +22,6 @@
 
         body {
             background: transparent;
-            font-family: 'Arial', sans-serif;
             height: 100vh;
             overflow: hidden;
         }
@@ -22,54 +30,24 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .timer-content {
-            background: rgba(0, 0, 0, 0.5);
             padding: 15px 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transform: scaleX(0);
-            transform-origin: left center;
+            transform: scale(0);
             opacity: 0;
         }
 
-        .timer-content.visible {
-            animation: wipeIn 0.4s ease-out forwards;
-        }
-
-        .timer-content.hiding {
-            animation: wipeOut 0.3s ease-in forwards;
-        }
-
-        @keyframes wipeIn {
-            0% {
-                transform: scaleX(0);
-                opacity: 0;
-            }
-            100% {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-        }
-
-        @keyframes wipeOut {
-            0% {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-            100% {
-                transform: scaleX(0);
-                opacity: 0;
-            }
+        .timer-label {
+            margin-right: 15px;
+            text-transform: uppercase;
         }
 
         .running-time {
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: rgba(255, 255, 255, 0.7);
             font-variant-numeric: tabular-nums;
             letter-spacing: 2px;
         }
@@ -78,6 +56,7 @@
 <body>
     <div class="timer-container">
         <div class="timer-content" id="timerContent">
+            <span class="timer-label">TIME</span>
             <span class="running-time" id="runningTime"></span>
         </div>
     </div>
@@ -85,39 +64,24 @@
     <script id="swimmingScript">
         let timerVisible = false;
 
-        // BroadcastChannel for tab-to-tab communication (Simulator)
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
-            console.log('BroadcastChannel data received');
             processTimerData(e.data);
         };
 
-        // WebSocket connection for production use
         let client = null;
         function connectWebSocket() {
             try {
                 client = new WebSocket("ws://localhost:8080/");
-
-                client.onerror = function() {
-                    console.log('WebSocket Connection Error');
-                };
-
-                client.onopen = function() {
-                    console.log('WebSocket Client Connected');
-                };
-
-                client.onclose = function() {
+                client.onerror = () => console.log('WebSocket Connection Error');
+                client.onopen = () => console.log('WebSocket Client Connected');
+                client.onclose = () => {
                     console.log('WebSocket Client Closed');
-                    // Retry connection after 3 seconds
                     setTimeout(connectWebSocket, 3000);
                 };
-
-                client.onmessage = function(e) {
-                    const jsonData = JSON.parse(e.data);
-                    processTimerData(jsonData);
-                };
+                client.onmessage = (e) => processTimerData(JSON.parse(e.data));
             } catch (e) {
-                console.log('WebSocket not available, using BroadcastChannel only');
+                console.log('WebSocket not available');
             }
         }
         connectWebSocket();
@@ -125,10 +89,8 @@
         function processTimerData(jsonData) {
             const timerContent = document.getElementById('timerContent');
             const runningTime = document.getElementById('runningTime');
-
             const time = jsonData.swimming.RunningTime;
 
-            // Check if timer is running (not stopped/reset values)
             const isRunning = time &&
                 time.trim() !== "" &&
                 time.trim() !== ":  ." &&
@@ -137,7 +99,6 @@
 
             if (isRunning) {
                 runningTime.textContent = time;
-
                 if (!timerVisible) {
                     timerContent.classList.remove('hiding');
                     timerContent.classList.add('visible');
@@ -148,11 +109,8 @@
                     timerContent.classList.remove('visible');
                     timerContent.classList.add('hiding');
                     timerVisible = false;
-
                     setTimeout(() => {
-                        if (!timerVisible) {
-                            runningTime.textContent = '';
-                        }
+                        if (!timerVisible) runningTime.textContent = '';
                     }, 300);
                 }
             }
