@@ -137,6 +137,18 @@
         .placeholder-box.event { width: 170px; }
         .placeholder-box.heat { width: 130px; }
         .placeholder-box.name { flex: 1; }
+        .placeholder-box.timer { width: 180px; }
+
+        /* Timer box */
+        #timerBox {
+            width: 180px;
+            flex-shrink: 0;
+        }
+
+        .timer-value {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+        }
 
         .placeholder-text {
             font-size: 0.9rem;
@@ -170,6 +182,9 @@
         <div class="placeholder-box name header-content visible">
             <span class="placeholder-text">Waiting for data...</span>
         </div>
+        <div class="placeholder-box timer header-content visible">
+            <span class="placeholder-text">0:00.0</span>
+        </div>
     </div>
 
     <div class="header-container">
@@ -195,6 +210,12 @@
                 </div>
             </div>
         </div>
+        <div class="header-box fixed" id="timerBox">
+            <div class="header-content" id="timerContent">
+                <span class="label">Time</span>
+                <span class="value timer-value" id="timerValue"></span>
+            </div>
+        </div>
         <div class="mario-runner" id="marioRunner"></div>
     </div>
 
@@ -202,13 +223,17 @@
         let eventVisible = false;
         let heatVisible = false;
         let nameVisible = false;
+        let timerVisible = false;
         let lastEventName = '';
         let lastEventNumber = '';
         let lastHeatNumber = '';
+        let lastTimerValue = '';
         let marioRunning = false;
         let eventExploding = false;
         let heatExploding = false;
         let firstMessageReceived = false;
+        let timerStaleTimeout = null;
+        const TIMER_STALE_MS = 5000;
 
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
@@ -392,6 +417,71 @@
                             const wrapper = document.getElementById('eventNameWrapper');
                             wrapper.classList.remove('scrolling');
                         }
+                    }, 300);
+                }
+            }
+
+            // Handle Timer
+            const timerContent = document.getElementById('timerContent');
+            const timerValueEl = document.getElementById('timerValue');
+            const time = jsonData.swimming.RunningTime;
+
+            const isValidTime = time &&
+                time.trim() !== "" &&
+                time.trim() !== ":  ." &&
+                time.trim() !== ": 0.0" &&
+                time.trim() !== "0.0";
+
+            if (isValidTime) {
+                const timeChanged = time !== lastTimerValue;
+
+                if (timeChanged) {
+                    lastTimerValue = time;
+                    timerValueEl.textContent = time;
+
+                    // Clear stale timeout
+                    if (timerStaleTimeout) {
+                        clearTimeout(timerStaleTimeout);
+                        timerStaleTimeout = null;
+                    }
+
+                    // Set stale timeout - hide if no change for 5 seconds
+                    timerStaleTimeout = setTimeout(() => {
+                        if (timerVisible) {
+                            timerContent.classList.remove('visible');
+                            timerContent.classList.add('hiding');
+                            timerVisible = false;
+                            setTimeout(() => {
+                                if (!timerVisible) timerValueEl.textContent = '';
+                            }, 300);
+                        }
+                    }, TIMER_STALE_MS);
+
+                    // Show timer if not visible and time is fresh (under 2 seconds or changing)
+                    if (!timerVisible) {
+                        // Parse time to check if fresh start
+                        const parts = time.split(':');
+                        let totalSeconds = 999;
+                        if (parts.length === 2) {
+                            const mins = parseInt(parts[0]) || 0;
+                            const secs = parseFloat(parts[1]) || 0;
+                            totalSeconds = mins * 60 + secs;
+                        }
+
+                        if (totalSeconds < 2) {
+                            timerContent.classList.remove('hiding');
+                            timerContent.classList.add('visible');
+                            timerVisible = true;
+                        }
+                    }
+                }
+            } else {
+                if (timerVisible) {
+                    timerContent.classList.remove('visible');
+                    timerContent.classList.add('hiding');
+                    timerVisible = false;
+                    setTimeout(() => {
+                        if (!timerVisible) timerValueEl.textContent = '';
                     }, 300);
                 }
             }

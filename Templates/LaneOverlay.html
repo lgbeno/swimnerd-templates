@@ -46,12 +46,12 @@
             left: 0;
             top: 0;
             height: 100%;
-            width: 100%;
+            width: calc(100% - 70px);
             display: flex;
             align-items: center;
             padding: 0 20px;
             transform: scaleX(0);
-            transform-origin: left center;
+            transform-origin: right center;
             opacity: 0;
             transition: none;
         }
@@ -84,7 +84,7 @@
 
         .split-content {
             position: absolute;
-            right: 0;
+            right: 70px;
             top: 0;
             height: 100%;
             display: flex;
@@ -105,12 +105,12 @@
             left: 0;
             top: 0;
             height: 100%;
-            width: 100%;
+            width: calc(100% - 70px);
             display: flex;
             align-items: center;
             padding: 0 20px;
             transform: scaleX(0);
-            transform-origin: left center;
+            transform-origin: right center;
             opacity: 0;
         }
 
@@ -122,10 +122,7 @@
         }
 
         .lineup-lane {
-            font-weight: bold;
-            min-width: 60px;
-            text-align: center;
-            margin-right: 15px;
+            display: none;
         }
 
         .lineup-name {
@@ -137,6 +134,21 @@
         .lineup-team {
             text-transform: uppercase;
             letter-spacing: 1px;
+        }
+
+        /* Persistent lane number indicator */
+        .lane-indicator {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 10;
         }
 
         /* Placeholder styling */
@@ -185,6 +197,7 @@
 
     <div class="lanes-container">
         <div class="lane-box" id="lane-8">
+            <div class="lane-indicator">8</div>
             <div class="lineup-content" id="lineupContent-8">
                 <div class="lineup-lane" id="lineupLane-8"></div>
                 <div class="lineup-info">
@@ -204,6 +217,7 @@
             </div>
         </div>
         <div class="lane-box" id="lane-7">
+            <div class="lane-indicator">7</div>
             <div class="lineup-content" id="lineupContent-7">
                 <div class="lineup-lane" id="lineupLane-7"></div>
                 <div class="lineup-info">
@@ -223,6 +237,7 @@
             </div>
         </div>
         <div class="lane-box" id="lane-6">
+            <div class="lane-indicator">6</div>
             <div class="lineup-content" id="lineupContent-6">
                 <div class="lineup-lane" id="lineupLane-6"></div>
                 <div class="lineup-info">
@@ -242,6 +257,7 @@
             </div>
         </div>
         <div class="lane-box" id="lane-5">
+            <div class="lane-indicator">5</div>
             <div class="lineup-content" id="lineupContent-5">
                 <div class="lineup-lane" id="lineupLane-5"></div>
                 <div class="lineup-info">
@@ -261,6 +277,7 @@
             </div>
         </div>
         <div class="lane-box" id="lane-4">
+            <div class="lane-indicator">4</div>
             <div class="lineup-content" id="lineupContent-4">
                 <div class="lineup-lane" id="lineupLane-4"></div>
                 <div class="lineup-info">
@@ -280,6 +297,7 @@
             </div>
         </div>
         <div class="lane-box" id="lane-3">
+            <div class="lane-indicator">3</div>
             <div class="lineup-content" id="lineupContent-3">
                 <div class="lineup-lane" id="lineupLane-3"></div>
                 <div class="lineup-info">
@@ -299,6 +317,7 @@
             </div>
         </div>
         <div class="lane-box" id="lane-2">
+            <div class="lane-indicator">2</div>
             <div class="lineup-content" id="lineupContent-2">
                 <div class="lineup-lane" id="lineupLane-2"></div>
                 <div class="lineup-info">
@@ -318,6 +337,7 @@
             </div>
         </div>
         <div class="lane-box" id="lane-1">
+            <div class="lane-indicator">1</div>
             <div class="lineup-content" id="lineupContent-1">
                 <div class="lineup-lane" id="lineupLane-1"></div>
                 <div class="lineup-info">
@@ -453,22 +473,26 @@
             lastEventNumber = eventNumber;
             lastHeatNumber = heatNumber;
 
-            // Track if race has started - only if timer is actively running (under 2 seconds means fresh start)
+            // Track if race has started - detect when timer starts changing
             if (timerActive && !raceInProgress) {
-                // Parse time to check if it's a fresh race start
-                const parts = runningTime.split(':');
-                if (parts.length === 2) {
-                    const mins = parseInt(parts[0]) || 0;
-                    const secs = parseFloat(parts[1]) || 0;
-                    const totalSeconds = mins * 60 + secs;
-                    // Only start race if timer is under 2 seconds (fresh start)
-                    if (totalSeconds < 2) {
-                        raceInProgress = true;
+                // Check if timer value changed (timer is actively running)
+                if (runningTime !== lastRunningTime && lastRunningTime !== '') {
+                    raceInProgress = true;
+                } else {
+                    // Also start if timer is under 5 seconds (fresh start)
+                    const parts = runningTime.split(':');
+                    if (parts.length === 2) {
+                        const mins = parseInt(parts[0]) || 0;
+                        const secs = parseFloat(parts[1]) || 0;
+                        const totalSeconds = mins * 60 + secs;
+                        if (totalSeconds < 5) {
+                            raceInProgress = true;
+                        }
                     }
                 }
             }
 
-            // Show lineup when not in race, regardless of stale final times
+            // Show lineup when not in race
             const showLineup = !raceInProgress;
 
             lastRunningTime = runningTime;

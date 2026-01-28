@@ -95,13 +95,13 @@ body {
 }
 
 @keyframes pipeSlideIn {
-    0% { transform: translateX(-100%); opacity: 0; }
+    0% { transform: translateX(100%); opacity: 0; }
     100% { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes pipeSlideOut {
     0% { transform: translateX(0); opacity: 1; }
-    100% { transform: translateX(-100%); opacity: 0; }
+    100% { transform: translateX(100%); opacity: 0; }
 }
 
 /* Pre-race lineup display */
@@ -245,19 +245,37 @@ body {
     animation: coinBounce 0.5s ease-out infinite;
 }
 
-/* Second place - Luigi green */
+/* Second place - Mario Blue */
 .lane-content.second-place {
-    background: linear-gradient(180deg, var(--color-secondary) 0%, var(--color-secondary-dark) 50%, #2e7d32 100%);
+    background: linear-gradient(180deg, #049CD8 0%, #037ba8 50%, #025a7a 100%);
 }
 
-/* Third place - Bronze/Brown brick */
+/* Third place - Luigi Green */
 .lane-content.third-place {
-    background: linear-gradient(180deg, var(--color-bronze) 0%, #a0522d 50%, var(--color-bronze-dark) 100%);
+    background: linear-gradient(180deg, #43B047 0%, #2d8032 50%, #1e6622 100%);
 }
 
-/* Split time - Question Block style */
-.split-content {
+/* Persistent lane number indicator - Question Block style */
+.lane-indicator {
     background: linear-gradient(180deg, var(--color-question) 0%, #ff8800 50%, var(--color-question-dark) 100%);
+    border: var(--border-width) solid #000;
+    border-radius: var(--border-radius);
+    box-shadow:
+        inset 0 -4px 0 rgba(0,0,0,0.3),
+        inset 4px 4px 0 rgba(255,255,255,0.3),
+        0 4px 8px var(--shadow-color);
+    font-size: 1.5rem;
+    color: #fff;
+    text-shadow:
+        3px 3px 0 #000,
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000;
+}
+
+/* Split time - Luigi Green style */
+.split-content {
+    background: linear-gradient(180deg, #43B047 0%, #2d8032 50%, #1e6622 100%);
     border: var(--border-width) solid #000;
     border-radius: var(--border-radius);
     box-shadow:
@@ -312,6 +330,31 @@ body {
         inset 0 -4px 0 rgba(0,0,0,0.3),
         inset 4px 4px 0 rgba(255,255,255,0.3),
         0 4px 8px var(--shadow-color);
+}
+
+/* Timer box - Blue style (Mario's overalls) */
+#timerBox .header-content {
+    background: linear-gradient(180deg, #049CD8 0%, #037ba8 50%, #025a7a 100%);
+    border: var(--border-width) solid #000;
+    border-radius: var(--border-radius);
+    box-shadow:
+        inset 0 -4px 0 rgba(0,0,0,0.3),
+        inset 4px 4px 0 rgba(255,255,255,0.3),
+        0 4px 8px var(--shadow-color);
+}
+
+#timerBox .label {
+    color: var(--color-gold);
+    text-shadow: 1px 1px 0 #000;
+}
+
+#timerBox .value {
+    color: #fff;
+    text-shadow:
+        2px 2px 0 #000,
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000;
 }
 
 /* Green Pipe style for Event Name box */
