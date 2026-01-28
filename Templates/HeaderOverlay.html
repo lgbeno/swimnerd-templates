@@ -160,7 +160,7 @@
                 transform: translateX(0);
             }
             100% {
-                transform: translateX(-50%);
+                transform: translateX(var(--scroll-distance));
             }
         }
     </style>
@@ -412,6 +412,7 @@
 
         function checkEventNameOverflow() {
             const wrapper = document.getElementById('eventNameWrapper');
+            const track = document.getElementById('eventNameTrack');
             const eventNameEl = document.getElementById('eventName');
             const eventNameCopy = document.getElementById('eventNameCopy');
 
@@ -422,11 +423,16 @@
             requestAnimationFrame(() => {
                 const wrapperWidth = wrapper.offsetWidth;
                 const textWidth = eventNameEl.offsetWidth;
+                const gap = 100; // padding-left on the copy
 
                 if (textWidth > wrapperWidth) {
-                    // Calculate scroll duration based on text length (roughly 80px per second)
-                    const scrollDuration = Math.max(8, (textWidth + 100) / 80);
-                    wrapper.style.setProperty('--scroll-duration', scrollDuration + 's');
+                    // Calculate exact scroll distance (text width + gap)
+                    const scrollDistance = textWidth + gap;
+                    // Calculate scroll duration based on distance (roughly 80px per second)
+                    const scrollDuration = Math.max(8, scrollDistance / 80);
+
+                    track.style.setProperty('--scroll-distance', `-${scrollDistance}px`);
+                    track.style.setProperty('--scroll-duration', scrollDuration + 's');
                     wrapper.classList.add('scrolling');
                 } else {
                     wrapper.classList.remove('scrolling');
