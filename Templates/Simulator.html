@@ -311,7 +311,7 @@
             <div class="toggle-container">
                 <span class="toggle-label">Show Preview</span>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="previewToggle" onchange="togglePreview()">
+                    <input type="checkbox" id="previewToggle" onchange="togglePreview()" checked>
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -337,27 +337,6 @@
             </div>
 
             <div class="control-group">
-                <h3>Quick Presets</h3>
-                <div class="button-row">
-                    <button class="btn-primary" onclick="loadPreset('empty')">Empty</button>
-                    <button class="btn-success" onclick="loadPreset('fullRace')">Full Race</button>
-                </div>
-                <div class="button-row">
-                    <button class="btn-warning" onclick="loadPreset('partial')">Partial</button>
-                    <button class="btn-primary" onclick="loadPreset('randomize')">Randomize</button>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <h3>Race Simulation</h3>
-                <div class="button-row">
-                    <button class="btn-success" onclick="startRaceSimulation()">Run Race</button>
-                    <button class="btn-danger" onclick="stopRaceSimulation()">Stop</button>
-                </div>
-                <div id="raceStatus"></div>
-            </div>
-
-            <div class="control-group">
                 <h3>Meet Simulation</h3>
                 <div class="button-row">
                     <button class="btn-success" onclick="startMeetSimulation()">Run Meet</button>
@@ -377,16 +356,7 @@
                     <div>Pl</div>
                 </div>
                 <div id="lanesContainer"></div>
-            </div>
-
-            <div class="control-group">
-                <h3>Actions</h3>
-                <div class="button-row">
-                    <button class="btn-success" onclick="sendData()">Send</button>
-                    <button class="btn-primary" onclick="sendDataContinuous()">Auto</button>
-                    <button class="btn-danger" onclick="stopContinuous()">Stop</button>
-                </div>
-                <div class="button-row">
+                <div class="button-row" style="margin-top: 10px;">
                     <button class="btn-warning" onclick="clearAllTimes()">Clear Times</button>
                 </div>
             </div>
@@ -568,7 +538,7 @@
                 const mins = Math.floor(timerSeconds / 60);
                 const secs = (timerSeconds % 60).toFixed(1);
                 document.getElementById('runningTime').value = `${mins}:${secs.padStart(4, '0')}`;
-                if (autoSending) sendData();
+                sendData(); // Always send when timer changes
             }, 100);
         }
 
@@ -1018,6 +988,19 @@
         // Initialize
         initLanes();
         loadPreset('fullRace');
+        clearAllTimes(); // Start with times reset
+        togglePreview(); // Load preview iframes by default
+
+        // Send initial data after a short delay to ensure iframes are loaded
+        setTimeout(() => sendData(), 500);
+
+        // Send data when Enter is pressed in any input field
+        document.querySelector('.controls-panel').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                e.preventDefault();
+                sendData();
+            }
+        });
     </script>
 </body>
 </html>
