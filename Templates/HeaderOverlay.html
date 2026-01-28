@@ -139,27 +139,10 @@
         .placeholder-box.name { flex: 1; }
         .placeholder-box.timer { width: 180px; }
 
-        /* Timer box */
+        /* Timer spacer box */
         #timerBox {
             width: 264px;
             flex-shrink: 0;
-            overflow: visible;
-        }
-
-        #timerBox .header-content {
-            position: relative;
-            overflow: visible;
-        }
-
-        .timer-label {
-            margin-right: 15px;
-            margin-left: 5px;
-            text-transform: uppercase;
-        }
-
-        .running-time {
-            font-variant-numeric: tabular-nums;
-            letter-spacing: 2px;
         }
 
         .placeholder-text {
@@ -222,13 +205,8 @@
                 </div>
             </div>
         </div>
-        <div class="header-box fixed" id="timerBox">
-            <div class="header-content timer-content" id="timerContent">
-                <div class="clock-hand" id="clockHand"></div>
-                <span class="timer-label">TIME</span>
-                <span class="running-time" id="runningTime"></span>
-            </div>
-        </div>
+        <!-- Empty spacer where timer used to be -->
+        <div class="header-box fixed" id="timerBox" style="visibility: hidden;"></div>
         <div class="mario-runner" id="marioRunner"></div>
     </div>
 
@@ -236,19 +214,13 @@
         let eventVisible = false;
         let heatVisible = false;
         let nameVisible = false;
-        let timerVisible = false;
         let lastEventName = '';
         let lastEventNumber = '';
         let lastHeatNumber = '';
-        let lastTimerValue = '';
         let marioRunning = false;
         let eventExploding = false;
         let heatExploding = false;
         let firstMessageReceived = false;
-        let timerStaleTimeout = null;
-        let timerHiddenDueToStale = false;
-        const TIMER_STALE_MS = 5000;
-        const TIMER_RESET_THRESHOLD_SECONDS = 2;
 
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
@@ -436,76 +408,6 @@
                 }
             }
 
-            // Handle Timer - same logic as TimerOverlay
-            const timerContent = document.getElementById('timerContent');
-            const runningTime = document.getElementById('runningTime');
-            const clockHand = document.getElementById('clockHand');
-            const time = jsonData.swimming.RunningTime;
-
-            const isRunning = time &&
-                time.trim() !== "" &&
-                time.trim() !== ":  ." &&
-                time.trim() !== ": 0.0" &&
-                time.trim() !== "0.0";
-
-            if (isRunning) {
-                // Parse total seconds from time string (format: "M:SS.s" or "MM:SS.ss")
-                let totalSeconds = 0;
-                const parts = time.split(':');
-                if (parts.length === 2) {
-                    const mins = parseInt(parts[0]) || 0;
-                    const secs = parseFloat(parts[1]) || 0;
-                    totalSeconds = mins * 60 + secs;
-                    // Set CSS variable for clock hand rotation (0-60 seconds = 0-360 degrees)
-                    clockHand.style.setProperty('--seconds', secs % 60);
-                }
-
-                // Check if time value changed
-                const timeChanged = time !== lastTimerValue;
-
-                if (timeChanged) {
-                    lastTimerValue = time;
-                    runningTime.textContent = time;
-
-                    // Clear any existing stale timeout
-                    if (timerStaleTimeout) {
-                        clearTimeout(timerStaleTimeout);
-                        timerStaleTimeout = null;
-                    }
-
-                    // Set new stale timeout - hide if no change for 5 seconds
-                    timerStaleTimeout = setTimeout(() => {
-                        if (timerVisible) {
-                            timerContent.classList.remove('visible');
-                            timerContent.classList.add('hiding');
-                            timerVisible = false;
-                            timerHiddenDueToStale = true;
-                            setTimeout(() => {
-                                if (!timerVisible) runningTime.textContent = '';
-                            }, 300);
-                        }
-                    }, TIMER_STALE_MS);
-
-                    // Show timer if: not visible AND (not hidden due to stale OR time is under threshold)
-                    if (!timerVisible) {
-                        if (!timerHiddenDueToStale || totalSeconds < TIMER_RESET_THRESHOLD_SECONDS) {
-                            timerContent.classList.remove('hiding');
-                            timerContent.classList.add('visible');
-                            timerVisible = true;
-                            timerHiddenDueToStale = false;
-                        }
-                    }
-                }
-            } else {
-                if (timerVisible) {
-                    timerContent.classList.remove('visible');
-                    timerContent.classList.add('hiding');
-                    timerVisible = false;
-                    setTimeout(() => {
-                        if (!timerVisible) runningTime.textContent = '';
-                    }, 300);
-                }
-            }
         }
 
         function checkEventNameOverflow() {
