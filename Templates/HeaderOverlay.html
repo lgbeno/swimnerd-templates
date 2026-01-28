@@ -327,9 +327,10 @@
             // Handle Event Number - skip all processing during explosion
             if (!eventExploding) {
                 if (eventNum) {
-                    // Check if number changed - trigger explode animation
+                    // Check if number changed - trigger explode animation and Mario run
                     if (eventNum !== lastEventNumber && lastEventNumber !== '' && eventVisible) {
                         triggerEventExplode(eventNum);
+                        triggerMarioRun();
                         lastEventNumber = eventNum;
                     } else {
                         eventNumberEl.textContent = eventNum;
@@ -377,10 +378,6 @@
             }
 
             if (name) {
-                // Check if event name changed - trigger Mario run
-                if (name !== lastEventName && lastEventName !== '') {
-                    triggerMarioRun();
-                }
                 lastEventName = name;
 
                 eventNameEl.textContent = name;
