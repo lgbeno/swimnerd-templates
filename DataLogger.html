@@ -110,7 +110,8 @@
   });
 
   btnSave.addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
+    const lines = '[\n' + logData.map(e => JSON.stringify(e)).join(',\n') + '\n]';
+    const blob = new Blob([lines], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'log_' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
