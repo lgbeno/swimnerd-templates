@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Logger</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; height: 100vh; display: flex; flex-direction: column; }
+  h1 { margin-bottom: 12px; font-size: 1.4em; }
+  .controls { display: flex; gap: 8px; margin-bottom: 12px; }
+  .controls button {
+    padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer;
+    font-family: monospace; font-size: 14px; font-weight: bold;
+  }
+  #btnStart { background: #4caf50; color: #fff; }
+  #btnStop { background: #f44336; color: #fff; }
+  #btnClear { background: #ff9800; color: #fff; }
+  #btnSave { background: #2196f3; color: #fff; }
+  .controls button:disabled { opacity: 0.4; cursor: default; }
+  #status { margin-bottom: 8px; font-size: 13px; }
+  #logWindow {
+    flex: 1; background: #111; border: 1px solid #444; border-radius: 4px;
+    padding: 10px; overflow-y: auto; overflow-x: auto; white-space: pre; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<h1>Data Logger</h1>
+<div id="status">Status: Idle | Entries: 0</div>
+<div class="controls">
+  <button id="btnStart">Start</button>
+  <button id="btnStop" disabled>Stop</button>
+  <button id="btnClear">Clear</button>
+  <button id="btnSave">Save</button>
+</div>
+<div id="logWindow"></div>
+
+<script>
+(function() {
+  const logWindow = document.getElementById('logWindow');
+  const statusEl = document.getElementById('status');
+  const btnStart = document.getElementById('btnStart');
+  const btnStop = document.getElementById('btnStop');
+  const btnClear = document.getElementById('btnClear');
+  const btnSave = document.getElementById('btnSave');
+
+  let ws = null;
+  let logging = false;
+  let startTime = null;
+  let logData = [];
+
+  function updateStatus(msg) {
+    const state = logging ? 'Logging' : (ws && ws.readyState === WebSocket.OPEN ? 'Connected' : 'Disconnected');
+    statusEl.textContent = `Status: ${state}${msg ? ' — ' + msg : ''} | Entries: ${logData.length}`;
+  }
+
+  function appendToWindow(text) {
+    logWindow.textContent += text + '\n';
+    logWindow.scrollTop = logWindow.scrollHeight;
+  }
+
+  function connectWebSocket() {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+    ws = new WebSocket('ws://localhost:8080');
+    ws.onopen = () => { updateStatus('WebSocket open'); appendToWindow('[WS] Connected'); };
+    ws.onclose = () => { updateStatus('WebSocket closed'); appendToWindow('[WS] Disconnected'); setTimeout(connectWebSocket, 3000); };
+    ws.onerror = () => { updateStatus('WebSocket error'); };
+    ws.onmessage = (evt) => {
+      if (!logging) return;
+      const elapsed = Math.round((performance.now() - startTime)) / 1000;
+      let payload;
+      try { payload = JSON.parse(evt.data); } catch { payload = evt.data; }
+      const entry = { t: elapsed, data: payload };
+      logData.push(entry);
+      appendToWindow(`[${elapsed}s] ${JSON.stringify(payload)}`);
+      updateStatus();
+    };
+  }
+
+  btnStart.addEventListener('click', () => {
+    if (logging) return;
+    logging = true;
+    if (startTime === null) startTime = performance.now();
+    btnStart.disabled = true;
+    btnStop.disabled = false;
+    connectWebSocket();
+    appendToWindow('[LOG] Started');
+    updateStatus();
+  });
+
+  btnStop.addEventListener('click', () => {
+    if (!logging) return;
+    logging = false;
+    btnStart.disabled = false;
+    btnStop.disabled = true;
+    appendToWindow('[LOG] Stopped');
+    updateStatus();
+  });
+
+  btnClear.addEventListener('click', () => {
+    logging = false;
+    logData = [];
+    startTime = null;
+    logWindow.textContent = '';
+    btnStart.disabled = false;
+    btnStop.disabled = true;
+    appendToWindow('[LOG] Cleared');
+    updateStatus();
+  });
+
+  btnSave.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'log_' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    appendToWindow('[LOG] Saved to file');
+  });
+
+  connectWebSocket();
+})();
+</script>
+</body>
+</html>
