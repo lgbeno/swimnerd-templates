@@ -49,6 +49,9 @@
   let logging = false;
   let startTime = null;
   let logData = [];
+  let lastLoggedJson = null;      // full JSON string of last logged message
+  let lastNonTimeJson = null;     // JSON string with RunningTime stripped
+  let lastTimeLogAt = 0;          // performance.now() of last time-only log
 
   function updateStatus(msg) {
     const state = logging ? 'Logging' : (ws && ws.readyState === WebSocket.OPEN ? 'Connected' : 'Disconnected');
@@ -68,13 +71,37 @@
     ws.onerror = () => { updateStatus('WebSocket error'); };
     ws.onmessage = (evt) => {
       if (!logging) return;
-      const elapsed = Math.round((performance.now() - startTime)) / 1000;
       let payload;
       try { payload = JSON.parse(evt.data); } catch { payload = evt.data; }
+
+      // Build a copy without RunningTime for comparison
+      const fullJson = JSON.stringify(payload);
+      let nonTimeCopy = payload;
+      if (payload && payload.swimming) {
+        nonTimeCopy = JSON.parse(fullJson);
+        delete nonTimeCopy.swimming.RunningTime;
+      }
+      const nonTimeJson = JSON.stringify(nonTimeCopy);
+
+      // Determine if we should log this message
+      const nonTimeChanged = nonTimeJson !== lastNonTimeJson;
+      const now = performance.now();
+      const timeOnlyChange = !nonTimeChanged && fullJson !== lastLoggedJson;
+      const enoughTimePassed = (now - lastTimeLogAt) >= 2000;
+
+      if (!nonTimeChanged && !timeOnlyChange) return; // exact duplicate
+      if (timeOnlyChange && !enoughTimePassed) return; // throttle time-only updates
+
+      const elapsed = Math.round((now - startTime)) / 1000;
       const entry = { t: elapsed, data: payload };
       logData.push(entry);
-      appendToWindow(`[${elapsed}s] ${JSON.stringify(payload)}`);
+      appendToWindow(`[${elapsed}s] ${fullJson}`);
       updateStatus();
+
+      lastLoggedJson = fullJson;
+      lastNonTimeJson = nonTimeJson;
+      if (timeOnlyChange) lastTimeLogAt = now;
+      if (nonTimeChanged) lastTimeLogAt = now;
     };
   }
 
@@ -102,6 +129,9 @@
     logging = false;
     logData = [];
     startTime = null;
+    lastLoggedJson = null;
+    lastNonTimeJson = null;
+    lastTimeLogAt = 0;
     logWindow.textContent = '';
     btnStart.disabled = false;
     btnStop.disabled = true;
