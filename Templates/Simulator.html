@@ -382,7 +382,7 @@
     </div>
 
     <script>
-        const NUM_LANES = 8;
+        const NUM_LANES = 10;
         let timerInterval = null;
         let timerSeconds = 0;
         let continuousInterval = null;
@@ -477,22 +477,53 @@
                 const name = document.getElementById(`name-${i}`).value;
                 const hasData = name.trim() !== '';
 
+                // Split name into first/last for the new fields
+                const nameParts = name.trim().split(/\s+/);
+                const firstname = nameParts.length > 0 ? nameParts[0] : '';
+                const lastname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
                 lanes.push({
-                    LaneNumber: hasData ? String(i) : "",
+                    LaneID: i,
+                    LaneNumber: hasData ? String(i) : " ",
                     AthleteName: name,
                     Team: document.getElementById(`team-${i}`).value,
-                    Place: document.getElementById(`place-${i}`).value || " ",
                     SplitTime: document.getElementById(`splitTime-${i}`).value || ".",
-                    FinalTime: document.getElementById(`finalTime-${i}`).value
+                    FinalTime: document.getElementById(`finalTime-${i}`).value,
+                    Place: document.getElementById(`place-${i}`).value || " ",
+                    Firstname: firstname,
+                    Middlename: "",
+                    Lastname: lastname,
+                    NameFormatDisplayAs: 9,
+                    NameCaseDisplayAs: 0
                 });
             }
 
+            const eventNumber = parseInt(document.getElementById('eventNumber').value) || 0;
+            const heatNumber = parseInt(document.getElementById('heatNumber').value) || 0;
+            const eventName = document.getElementById('eventName').value;
+
             return {
+                dbLiveScoreboardEvent: null,
                 swimming: {
-                    EventNumber: document.getElementById('eventNumber').value,
-                    HeatNumber: document.getElementById('heatNumber').value,
-                    EventName: document.getElementById('eventName').value,
+                    TimeOfDay: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+                    EventName: eventName,
+                    EventRecord: "",
+                    EventNumber: eventNumber,
+                    HeatNumber: heatNumber,
+                    Lengths: 4,
                     RunningTime: document.getElementById('runningTime').value,
+                    HomeScore: 0,
+                    Guest1Score: 0,
+                    Guest2Score: 0,
+                    Guest3Score: 0,
+                    Mod15: "0",
+                    ScoreboardCurrentState: 0,
+                    ExportLiveResults: false,
+                    TimeStandard1: "",
+                    TimeStandard2: "",
+                    TimeStandard3: "",
+                    EventHeatName: `Event: ${eventNumber} Heat: ${heatNumber} - ${eventName}`,
+                    EventNumberName: `${eventNumber}: ${eventName}`,
                     LaneAthleteTeam: lanes
                 }
             };
