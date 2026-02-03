@@ -92,11 +92,6 @@
     <script id="swimmingScript">
         let timerVisible = false;
         let firstMessageReceived = false;
-        let lastTimeValue = '';
-        let staleTimeout = null;
-        let hiddenDueToStale = false;
-        const STALE_TIMEOUT_MS = 5000; // Hide after 5 seconds of no change
-        const RESET_THRESHOLD_SECONDS = 2; // Only reappear if time < 2 seconds
 
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
@@ -131,60 +126,23 @@
             const runningTime = document.getElementById('runningTime');
             const clockHand = document.getElementById('clockHand');
             const time = jsonData.swimming.RunningTime;
+            const scoreboardState = jsonData.swimming.ScoreboardCurrentState || 0;
 
-            const isRunning = time &&
-                time.trim() !== "" &&
-                time.trim() !== ":  ." &&
-                time.trim() !== ": 0.0" &&
-                time.trim() !== "0.0";
+            // Timer is only visible when ScoreboardCurrentState is 3 (Running)
+            if (scoreboardState === 3) {
+                runningTime.textContent = time;
 
-            if (isRunning) {
-                // Parse total seconds from time string (format: "M:SS.s" or "MM:SS.ss")
-                let totalSeconds = 0;
+                // Update clock hand rotation
                 const parts = time.split(':');
                 if (parts.length === 2) {
-                    const mins = parseInt(parts[0]) || 0;
                     const secs = parseFloat(parts[1]) || 0;
-                    totalSeconds = mins * 60 + secs;
-                    // Set CSS variable for clock hand rotation (0-60 seconds = 0-360 degrees)
                     clockHand.style.setProperty('--seconds', secs % 60);
                 }
 
-                // Check if time value changed
-                const timeChanged = time !== lastTimeValue;
-
-                if (timeChanged) {
-                    lastTimeValue = time;
-                    runningTime.textContent = time;
-
-                    // Clear any existing stale timeout
-                    if (staleTimeout) {
-                        clearTimeout(staleTimeout);
-                        staleTimeout = null;
-                    }
-
-                    // Set new stale timeout - hide if no change for 5 seconds
-                    staleTimeout = setTimeout(() => {
-                        if (timerVisible) {
-                            timerContent.classList.remove('visible');
-                            timerContent.classList.add('hiding');
-                            timerVisible = false;
-                            hiddenDueToStale = true;
-                            setTimeout(() => {
-                                if (!timerVisible) runningTime.textContent = '';
-                            }, 300);
-                        }
-                    }, STALE_TIMEOUT_MS);
-
-                    // Show timer if: not visible AND (not hidden due to stale OR time is under threshold)
-                    if (!timerVisible) {
-                        if (!hiddenDueToStale || totalSeconds < RESET_THRESHOLD_SECONDS) {
-                            timerContent.classList.remove('hiding');
-                            timerContent.classList.add('visible');
-                            timerVisible = true;
-                            hiddenDueToStale = false;
-                        }
-                    }
+                if (!timerVisible) {
+                    timerContent.classList.remove('hiding');
+                    timerContent.classList.add('visible');
+                    timerVisible = true;
                 }
             } else {
                 if (timerVisible) {

@@ -182,6 +182,32 @@
             letter-spacing: 1px;
             text-align: center;
         }
+
+        /* Mario brick explosion */
+        .lane-indicator.brick-explode {
+            animation: brickExplode 0.4s ease-out forwards;
+        }
+
+        @keyframes brickExplode {
+            0% { transform: translateY(-50%) scale(1); opacity: 1; }
+            30% { transform: translateY(-50%) scale(1.3); opacity: 1; }
+            100% { transform: translateY(-50%) scale(0); opacity: 0; }
+        }
+
+        .brick-fragment {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 100;
+            animation: fragmentFly 0.6s ease-out forwards;
+        }
+
+        @keyframes fragmentFly {
+            0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+            100% { opacity: 0; transform: translate(var(--fx), var(--fy)) rotate(720deg); }
+        }
     </style>
 </head>
 <body>
@@ -367,11 +393,49 @@
         let lineupVisibility = new Array(NUM_LANES).fill(false);
         let splitTimeouts = new Array(NUM_LANES).fill(null);
         let lastSplitValue = new Array(NUM_LANES).fill(null);
-        let lastRunningTime = '';
-        let lastEventNumber = '';
-        let lastHeatNumber = '';
+        let lastScoreboardState = 0;
         let raceInProgress = false;
+        let raceStartTime = 0;
+        const FINAL_TIME_GUARD_MS = 10000; // Suppress finals for 10s after race starts
         let firstMessageReceived = false;
+        let laneIndicatorHidden = new Array(NUM_LANES).fill(false);
+
+        function explodeLaneIndicator(laneNum) {
+            const el = document.querySelector(`#lane-${laneNum} .lane-indicator`);
+            if (!el || laneIndicatorHidden[laneNum - 1]) return;
+            laneIndicatorHidden[laneNum - 1] = true;
+
+            const rect = el.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+
+            // Spawn brick fragments
+            const colors = ['#FBD000', '#ff8800', '#c49800', '#ffe040'];
+            for (let p = 0; p < 12; p++) {
+                const frag = document.createElement('div');
+                frag.className = 'brick-fragment';
+                const angle = (Math.PI * 2 * p) / 12 + (Math.random() - 0.5) * 0.5;
+                const dist = 30 + Math.random() * 50;
+                frag.style.left = cx + 'px';
+                frag.style.top = cy + 'px';
+                frag.style.background = colors[p % colors.length];
+                frag.style.setProperty('--fx', Math.cos(angle) * dist + 'px');
+                frag.style.setProperty('--fy', (Math.sin(angle) * dist - 30) + 'px');
+                document.body.appendChild(frag);
+                setTimeout(() => frag.remove(), 600);
+            }
+
+            el.classList.add('brick-explode');
+            setTimeout(() => { el.style.visibility = 'hidden'; }, 400);
+        }
+
+        function restoreLaneIndicator(laneNum) {
+            const el = document.querySelector(`#lane-${laneNum} .lane-indicator`);
+            if (!el || !laneIndicatorHidden[laneNum - 1]) return;
+            laneIndicatorHidden[laneNum - 1] = false;
+            el.classList.remove('brick-explode');
+            el.style.visibility = '';
+        }
 
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
@@ -394,15 +458,6 @@
             }
         }
         connectWebSocket();
-
-        function isTimerRunning(time) {
-            return time &&
-                time.trim() !== "" &&
-                time.trim() !== ":  ." &&
-                time.trim() !== ": 0.0" &&
-                time.trim() !== "0.0" &&
-                time.trim() !== "0:00.0";
-        }
 
         function resetAllLanes() {
             for (let laneCounter = 0; laneCounter < NUM_LANES; laneCounter++) {
@@ -456,46 +511,24 @@
                 document.getElementById('placeholder').classList.add('hidden');
             }
 
-            const runningTime = jsonData.swimming.RunningTime;
-            const eventNumber = jsonData.swimming.EventNumber || '';
-            const heatNumber = jsonData.swimming.HeatNumber || '';
-            const timerActive = isTimerRunning(runningTime);
+            const scoreboardState = jsonData.swimming.ScoreboardCurrentState || 0;
 
-            // Check if event or heat changed - reset everything for new race
-            const eventHeatChanged = (eventNumber !== lastEventNumber || heatNumber !== lastHeatNumber)
-                && (lastEventNumber !== '' || lastHeatNumber !== '');
-
-            if (eventHeatChanged) {
+            // Detect transition to Running (state 3) — new race started
+            if (scoreboardState === 3 && lastScoreboardState !== 3) {
                 resetAllLanes();
-                // Don't start race based on stale timer - wait for timer under 2 seconds
+                raceInProgress = true;
+                raceStartTime = Date.now();
             }
 
-            lastEventNumber = eventNumber;
-            lastHeatNumber = heatNumber;
-
-            // Track if race has started - detect when timer starts changing
-            if (timerActive && !raceInProgress) {
-                // Check if timer value changed (timer is actively running)
-                if (runningTime !== lastRunningTime && lastRunningTime !== '') {
-                    raceInProgress = true;
-                } else {
-                    // Also start if timer is under 5 seconds (fresh start)
-                    const parts = runningTime.split(':');
-                    if (parts.length === 2) {
-                        const mins = parseInt(parts[0]) || 0;
-                        const secs = parseFloat(parts[1]) || 0;
-                        const totalSeconds = mins * 60 + secs;
-                        if (totalSeconds < 5) {
-                            raceInProgress = true;
-                        }
-                    }
-                }
+            // Detect transition away from Running — race ended
+            if (scoreboardState !== 3 && lastScoreboardState === 3) {
+                raceInProgress = false;
             }
+
+            lastScoreboardState = scoreboardState;
 
             // Show lineup when not in race
             const showLineup = !raceInProgress;
-
-            lastRunningTime = runningTime;
 
             for (let laneCounter = 0; laneCounter < NUM_LANES; laneCounter++) {
                 const laneNum = laneCounter + 1;
@@ -513,8 +546,17 @@
 
                 const hasData = laneData.LaneNumber.trim() !== "";
                 const hasFinalTime = laneData.FinalTime && laneData.FinalTime.trim() !== "";
+                const hasPlace = laneData.Place && laneData.Place.trim() !== "" && laneData.Place.trim() !== " ";
                 const hasSplitTime = laneData.SplitTime && laneData.SplitTime.trim() !== "" && laneData.SplitTime.trim() !== ".";
-                const shouldShowFinal = hasData && hasFinalTime && raceInProgress;
+                const pastGuard = (Date.now() - raceStartTime) >= FINAL_TIME_GUARD_MS;
+                const shouldShowFinal = hasData && hasFinalTime && hasPlace && raceInProgress && pastGuard;
+
+                // Explode or restore lane indicator brick
+                if (!hasData) {
+                    explodeLaneIndicator(laneNum);
+                } else {
+                    restoreLaneIndicator(laneNum);
+                }
 
                 // Pre-race lineup display (show when race not in progress, ignore stale final times)
                 if (hasData && showLineup) {
