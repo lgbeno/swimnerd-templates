@@ -92,6 +92,9 @@
     <script id="swimmingScript">
         let timerVisible = false;
         let firstMessageReceived = false;
+        let lastScoreboardState = 0;
+        let raceStartTime = 0;
+        const FINAL_TIME_GUARD_MS = 10000;
 
         const channel = new BroadcastChannel('swimnerd-scoreboard');
         channel.onmessage = function(e) {
@@ -115,6 +118,21 @@
         }
         connectWebSocket();
 
+        function checkAllActiveFinished(laneAthleteTeam) {
+            let activeCount = 0;
+            let finishedCount = 0;
+            for (let i = 0; i < 8; i++) {
+                const lane = laneAthleteTeam[i];
+                if (lane.LaneNumber && lane.LaneNumber.trim() !== "") {
+                    activeCount++;
+                    if (lane.Place && lane.Place.trim() !== "" && lane.Place.trim() !== " ") {
+                        finishedCount++;
+                    }
+                }
+            }
+            return activeCount > 0 && finishedCount === activeCount;
+        }
+
         function processTimerData(jsonData) {
             // Hide placeholder on first message
             if (!firstMessageReceived) {
@@ -128,8 +146,17 @@
             const time = jsonData.swimming.RunningTime;
             const scoreboardState = jsonData.swimming.ScoreboardCurrentState || 0;
 
-            // Timer is only visible when ScoreboardCurrentState is 3 (Running)
-            if (scoreboardState === 3) {
+            // Track race start for guard period
+            if (scoreboardState === 3 && lastScoreboardState !== 3) {
+                raceStartTime = Date.now();
+            }
+            lastScoreboardState = scoreboardState;
+
+            const pastGuard = (Date.now() - raceStartTime) >= FINAL_TIME_GUARD_MS;
+            const allFinished = pastGuard && checkAllActiveFinished(jsonData.swimming.LaneAthleteTeam);
+
+            // Timer visible only when race is actively running (state 3 and not all finished)
+            if (scoreboardState === 3 && !allFinished) {
                 runningTime.textContent = time;
 
                 // Update clock hand rotation

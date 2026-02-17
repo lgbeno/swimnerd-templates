@@ -387,16 +387,21 @@
     <script id="swimmingScript" numberOfLanes="8">
         const NUM_LANES = 8;
         const SPLIT_DISPLAY_PERCENT = 0.4;
+        const SPLIT_SHOW_DELAY_MS = 500; // Delay before showing splits to avoid finish-split glitch
 
         let laneVisibility = new Array(NUM_LANES).fill(false);
         let splitVisibility = new Array(NUM_LANES).fill(false);
         let lineupVisibility = new Array(NUM_LANES).fill(false);
         let splitTimeouts = new Array(NUM_LANES).fill(null);
+        let splitPendingTimeouts = new Array(NUM_LANES).fill(null);
         let lastSplitValue = new Array(NUM_LANES).fill(null);
         let lastScoreboardState = 0;
-        let raceInProgress = false;
         let raceStartTime = 0;
         const FINAL_TIME_GUARD_MS = 10000; // Suppress finals for 10s after race starts
+        let lastEventNumber = null;
+        let lastHeatNumber = null;
+        // Display modes: 'lineup' (pre-race), 'racing' (race active), 'results' (race complete)
+        let displayMode = 'lineup';
         let firstMessageReceived = false;
         let laneIndicatorHidden = new Array(NUM_LANES).fill(false);
 
@@ -459,7 +464,7 @@
         }
         connectWebSocket();
 
-        function resetAllLanes() {
+        function resetAllLanes(laneAthleteTeam) {
             for (let laneCounter = 0; laneCounter < NUM_LANES; laneCounter++) {
                 const laneNum = laneCounter + 1;
                 const laneContent = document.getElementById(`laneContent-${laneNum}`);
@@ -490,6 +495,10 @@
                     clearTimeout(splitTimeouts[laneCounter]);
                     splitTimeouts[laneCounter] = null;
                 }
+                if (splitPendingTimeouts[laneCounter]) {
+                    clearTimeout(splitPendingTimeouts[laneCounter]);
+                    splitPendingTimeouts[laneCounter] = null;
+                }
 
                 // Hide and clear lineup content
                 lineupContent.classList.remove('visible');
@@ -499,9 +508,26 @@
                 lineupName.textContent = '';
                 lineupTeam.textContent = '';
 
-                lastSplitValue[laneCounter] = null;
+                // Pre-seed with current split data to prevent stale splits from showing
+                lastSplitValue[laneCounter] = laneAthleteTeam
+                    ? laneAthleteTeam[laneCounter].SplitTime
+                    : null;
             }
-            raceInProgress = false;
+        }
+
+        function checkAllActiveFinished(laneAthleteTeam) {
+            let activeCount = 0;
+            let finishedCount = 0;
+            for (let i = 0; i < NUM_LANES; i++) {
+                const lane = laneAthleteTeam[i];
+                if (lane.LaneNumber && lane.LaneNumber.trim() !== "") {
+                    activeCount++;
+                    if (lane.Place && lane.Place.trim() !== "" && lane.Place.trim() !== " ") {
+                        finishedCount++;
+                    }
+                }
+            }
+            return activeCount > 0 && finishedCount === activeCount;
         }
 
         function processLaneData(jsonData) {
@@ -512,23 +538,43 @@
             }
 
             const scoreboardState = jsonData.swimming.ScoreboardCurrentState || 0;
+            const eventNum = jsonData.swimming.EventNumber;
+            const heatNum = jsonData.swimming.HeatNumber;
 
-            // Detect transition to Running (state 3) — new race started
-            if (scoreboardState === 3 && lastScoreboardState !== 3) {
-                resetAllLanes();
-                raceInProgress = true;
+            // Detect new event or heat — reset and show lineup or start racing
+            const isNewEvent = lastEventNumber !== null &&
+                (eventNum !== lastEventNumber || heatNum !== lastHeatNumber);
+
+            if (isNewEvent) {
+                resetAllLanes(jsonData.swimming.LaneAthleteTeam);
+                if (scoreboardState === 3) {
+                    displayMode = 'racing';
+                    raceStartTime = Date.now();
+                } else {
+                    displayMode = 'lineup';
+                }
+            }
+
+            // Detect state transition to 3 (same event/heat) — race starting
+            if (!isNewEvent && scoreboardState === 3 && lastScoreboardState !== 3) {
+                resetAllLanes(jsonData.swimming.LaneAthleteTeam);
+                displayMode = 'racing';
                 raceStartTime = Date.now();
             }
 
-            // Detect transition away from Running — race ended
-            if (scoreboardState !== 3 && lastScoreboardState === 3) {
-                raceInProgress = false;
-            }
+            // Note: state leaving 3 does NOT change displayMode
+            // Results persist until a new event/heat begins
 
+            lastEventNumber = eventNum;
+            lastHeatNumber = heatNum;
             lastScoreboardState = scoreboardState;
 
-            // Show lineup when not in race
-            const showLineup = !raceInProgress;
+            // Check if all active lanes finished — transition to results mode
+            // Only after guard period so stale Places from previous race don't trigger this
+            const pastGuard = (Date.now() - raceStartTime) >= FINAL_TIME_GUARD_MS;
+            if (displayMode === 'racing' && pastGuard && checkAllActiveFinished(jsonData.swimming.LaneAthleteTeam)) {
+                displayMode = 'results';
+            }
 
             for (let laneCounter = 0; laneCounter < NUM_LANES; laneCounter++) {
                 const laneNum = laneCounter + 1;
@@ -547,9 +593,8 @@
                 const hasData = laneData.LaneNumber.trim() !== "";
                 const hasFinalTime = laneData.FinalTime && laneData.FinalTime.trim() !== "";
                 const hasPlace = laneData.Place && laneData.Place.trim() !== "" && laneData.Place.trim() !== " ";
-                const hasSplitTime = laneData.SplitTime && laneData.SplitTime.trim() !== "" && laneData.SplitTime.trim() !== ".";
-                const pastGuard = (Date.now() - raceStartTime) >= FINAL_TIME_GUARD_MS;
-                const shouldShowFinal = hasData && hasFinalTime && hasPlace && raceInProgress && pastGuard;
+                const hasSplitTime = laneData.SplitTime && laneData.SplitTime.trim() !== "" && laneData.SplitTime.trim() !== "." && /^\d/.test(laneData.SplitTime.trim());
+                const shouldShowFinal = hasData && hasFinalTime && hasPlace && (displayMode === 'racing' || displayMode === 'results') && pastGuard;
 
                 // Explode or restore lane indicator brick
                 if (!hasData) {
@@ -558,8 +603,8 @@
                     restoreLaneIndicator(laneNum);
                 }
 
-                // Pre-race lineup display (show when race not in progress, ignore stale final times)
-                if (hasData && showLineup) {
+                // Pre-race lineup display (show when in lineup mode)
+                if (hasData && displayMode === 'lineup') {
                     lineupLane.textContent = laneData.LaneNumber;
                     lineupName.textContent = laneData.AthleteName;
                     lineupTeam.textContent = laneData.Team || '';
@@ -604,12 +649,16 @@
                         laneVisibility[laneCounter] = true;
                     }
 
+                    // Cancel any pending split display
+                    if (splitPendingTimeouts[laneCounter]) {
+                        clearTimeout(splitPendingTimeouts[laneCounter]);
+                        splitPendingTimeouts[laneCounter] = null;
+                    }
                     if (splitVisibility[laneCounter]) {
                         if (splitTimeouts[laneCounter]) {
                             clearTimeout(splitTimeouts[laneCounter]);
                             splitTimeouts[laneCounter] = null;
                         }
-                        lastSplitValue[laneCounter] = null;
                         splitContent.classList.remove('visible');
                         splitContent.classList.add('hiding');
                         splitVisibility[laneCounter] = false;
@@ -632,28 +681,44 @@
                         }, 300);
                     }
 
-                    if (hasData && hasSplitTime && raceInProgress) {
+                    if (hasData && hasSplitTime && displayMode === 'racing') {
                         const isNewSplit = laneData.SplitTime !== lastSplitValue[laneCounter];
                         if (isNewSplit) {
                             lastSplitValue[laneCounter] = laneData.SplitTime;
-                            splitTime.textContent = laneData.SplitTime;
-                            if (splitTimeouts[laneCounter]) clearTimeout(splitTimeouts[laneCounter]);
-                            if (!splitVisibility[laneCounter]) {
-                                splitContent.classList.remove('hiding');
-                                splitContent.classList.add('visible');
-                                splitVisibility[laneCounter] = true;
+                            // Cancel any existing pending show
+                            if (splitPendingTimeouts[laneCounter]) {
+                                clearTimeout(splitPendingTimeouts[laneCounter]);
+                                splitPendingTimeouts[laneCounter] = null;
                             }
-                            const splitSeconds = parseFloat(laneData.SplitTime) || 5;
-                            const displayDuration = splitSeconds * SPLIT_DISPLAY_PERCENT * 1000;
-                            splitTimeouts[laneCounter] = setTimeout(() => {
-                                splitContent.classList.remove('visible');
-                                splitContent.classList.add('hiding');
-                                splitVisibility[laneCounter] = false;
-                                lastSplitValue[laneCounter] = null;
-                                setTimeout(() => {
-                                    if (!splitVisibility[laneCounter]) splitTime.textContent = "";
-                                }, 300);
-                            }, displayDuration);
+                            if (splitTimeouts[laneCounter]) clearTimeout(splitTimeouts[laneCounter]);
+                            const capturedSplitValue = laneData.SplitTime;
+                            const lc = laneCounter;
+                            // Delay showing split so finish-splits get cancelled by arriving Place
+                            splitPendingTimeouts[lc] = setTimeout(() => {
+                                splitPendingTimeouts[lc] = null;
+                                if (displayMode !== 'racing') return;
+                                const sc = document.getElementById(`splitContent-${lc + 1}`);
+                                const st = document.getElementById(`splitTime-${lc + 1}`);
+                                st.textContent = capturedSplitValue;
+                                if (!splitVisibility[lc]) {
+                                    sc.classList.remove('hiding');
+                                    sc.classList.add('visible');
+                                    splitVisibility[lc] = true;
+                                }
+                                const sParts = capturedSplitValue.split(':');
+                                const sSecs = sParts.length === 2
+                                    ? (parseFloat(sParts[0]) || 0) * 60 + (parseFloat(sParts[1]) || 0)
+                                    : parseFloat(capturedSplitValue) || 5;
+                                const displayDuration = sSecs * SPLIT_DISPLAY_PERCENT * 1000;
+                                splitTimeouts[lc] = setTimeout(() => {
+                                    sc.classList.remove('visible');
+                                    sc.classList.add('hiding');
+                                    splitVisibility[lc] = false;
+                                    setTimeout(() => {
+                                        if (!splitVisibility[lc]) st.textContent = "";
+                                    }, 300);
+                                }, displayDuration);
+                            }, SPLIT_SHOW_DELAY_MS);
                         }
                     }
                 }

@@ -354,6 +354,17 @@
                     <button class="btn-success" id="replayPlayBtn" onclick="replayPlay()" disabled>Play</button>
                     <button class="btn-danger" id="replayStopBtn" onclick="replayStop()" disabled>Stop</button>
                 </div>
+                <div id="replayCueControls" style="display: none; margin-top: 8px;">
+                    <label>Cue Position</label>
+                    <input type="range" id="replayScrubber" min="0" max="0" value="0"
+                        oninput="replayScrubberChanged()" style="margin-bottom: 4px; cursor: pointer;">
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="number" id="replayCueInput" min="1" max="1" value="1"
+                            style="width: 80px; flex: none;" onchange="replayCueInputChanged()">
+                        <span id="replayCueInfo" style="color: #aaa; font-size: 0.75rem; flex: 1;"></span>
+                        <button class="btn-warning" id="replayCueBtn" onclick="replayCue()">Cue</button>
+                    </div>
+                </div>
                 <div id="replayStatus" style="margin-top: 8px; color: #00d4ff; font-size: 0.8rem;"></div>
             </div>
 
@@ -1115,6 +1126,17 @@
                     replayIndex = 0;
                     document.getElementById('replayStatus').textContent = `Loaded ${replayEntries.length} entries from ${file.name}`;
                     document.getElementById('replayPlayBtn').disabled = false;
+
+                    // Show cue controls and set bounds
+                    const cueControls = document.getElementById('replayCueControls');
+                    const scrubber = document.getElementById('replayScrubber');
+                    const cueInput = document.getElementById('replayCueInput');
+                    cueControls.style.display = '';
+                    scrubber.max = replayEntries.length - 1;
+                    scrubber.value = 0;
+                    cueInput.max = replayEntries.length;
+                    cueInput.value = 1;
+                    updateCueInfo(0);
                 } catch (err) {
                     document.getElementById('replayStatus').textContent = 'Parse error: ' + err.message;
                 }
@@ -1123,6 +1145,47 @@
                 document.getElementById('replayStatus').textContent = 'Read error: could not read file';
             };
             reader.readAsText(file);
+        }
+
+        function updateCueInfo(index) {
+            const entry = replayEntries[index];
+            if (!entry) return;
+            const t = entry.t.toFixed(1);
+            const ev = entry.data.swimming.EventNumber || '?';
+            const ht = entry.data.swimming.HeatNumber || '?';
+            const rt = (entry.data.swimming.RunningTime || '').trim();
+            document.getElementById('replayCueInfo').textContent =
+                `t=${t}s | Ev${ev} Ht${ht} | ${rt}`;
+        }
+
+        function replayScrubberChanged() {
+            const index = parseInt(document.getElementById('replayScrubber').value);
+            document.getElementById('replayCueInput').value = index + 1;
+            updateCueInfo(index);
+        }
+
+        function replayCueInputChanged() {
+            const val = parseInt(document.getElementById('replayCueInput').value);
+            const index = Math.max(0, Math.min(replayEntries.length - 1, val - 1));
+            document.getElementById('replayScrubber').value = index;
+            document.getElementById('replayCueInput').value = index + 1;
+            updateCueInfo(index);
+        }
+
+        function replayCue() {
+            if (replayRunning || replayEntries.length === 0) return;
+            const index = parseInt(document.getElementById('replayScrubber').value);
+            const entry = replayEntries[index];
+            if (!entry) return;
+
+            // Send this single frame to overlays
+            channel.postMessage(entry.data);
+            if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+                wsClient.send(JSON.stringify(entry.data));
+            }
+            document.getElementById('jsonPreview').textContent = JSON.stringify(entry.data, null, 2);
+            document.getElementById('replayStatus').textContent =
+                `Cued to entry ${index + 1} / ${replayEntries.length}`;
         }
 
         function replayPlay() {
@@ -1136,7 +1199,8 @@
                 if (!['replayStopBtn'].includes(btn.id)) btn.classList.add('replay-disabled');
             });
 
-            replayIndex = 0;
+            // Start from the cue position
+            replayIndex = parseInt(document.getElementById('replayScrubber').value) || 0;
             scheduleReplayEntry();
         }
 
@@ -1159,6 +1223,9 @@
                 }
                 document.getElementById('replayStatus').textContent =
                     `Entry ${replayIndex + 1} / ${replayEntries.length}`;
+                document.getElementById('replayScrubber').value = replayIndex;
+                document.getElementById('replayCueInput').value = replayIndex + 1;
+                updateCueInfo(replayIndex);
                 document.getElementById('jsonPreview').textContent = JSON.stringify(entry.data, null, 2);
                 replayIndex++;
                 scheduleReplayEntry();
