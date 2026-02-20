@@ -395,6 +395,7 @@
         let splitTimeouts = new Array(NUM_LANES).fill(null);
         let splitPendingTimeouts = new Array(NUM_LANES).fill(null);
         let lastSplitValue = new Array(NUM_LANES).fill(null);
+        let laneActivated = new Array(NUM_LANES).fill(false); // Nameless lanes activated by receiving timing data
         let lastScoreboardState = 0;
         let raceStartTime = 0;
         const FINAL_TIME_GUARD_MS = 10000; // Suppress finals for 10s after race starts
@@ -512,6 +513,8 @@
                 lastSplitValue[laneCounter] = laneAthleteTeam
                     ? laneAthleteTeam[laneCounter].SplitTime
                     : null;
+
+                laneActivated[laneCounter] = false;
             }
         }
 
@@ -590,11 +593,25 @@
                 const lineupName = document.getElementById(`lineupName-${laneNum}`);
                 const lineupTeam = document.getElementById(`lineupTeam-${laneNum}`);
 
-                const hasData = laneData.LaneNumber.trim() !== "";
+                const hasLaneNumber = laneData.LaneNumber.trim() !== "";
+                const hasName = laneData.AthleteName && laneData.AthleteName.trim() !== "";
                 const hasFinalTime = laneData.FinalTime && laneData.FinalTime.trim() !== "";
+                // True final times have hundredths precision (e.g. "1:24.31"), while the
+                // running clock only has tenths (e.g. "1:24.5"). Require hundredths to
+                // avoid briefly displaying the running clock when Place arrives first.
+                const isFinalTimeLocked = hasFinalTime && /\.\d{2}$/.test(laneData.FinalTime.trim());
                 const hasPlace = laneData.Place && laneData.Place.trim() !== "" && laneData.Place.trim() !== " ";
                 const hasSplitTime = laneData.SplitTime && laneData.SplitTime.trim() !== "" && laneData.SplitTime.trim() !== "." && /^\d/.test(laneData.SplitTime.trim());
-                const shouldShowFinal = hasData && hasFinalTime && hasPlace && (displayMode === 'racing' || displayMode === 'results') && pastGuard;
+
+                // Activate nameless lane when a new split arrives (evidence of a swimmer)
+                const isNewSplit = hasSplitTime && laneData.SplitTime !== lastSplitValue[laneCounter];
+                if (hasLaneNumber && !hasName && isNewSplit) {
+                    laneActivated[laneCounter] = true;
+                }
+
+                // Lane is displayable if it has a name, or was activated by receiving timing data
+                const hasData = hasLaneNumber && (hasName || laneActivated[laneCounter]);
+                const shouldShowFinal = hasData && isFinalTimeLocked && hasPlace && (displayMode === 'racing' || displayMode === 'results') && pastGuard;
 
                 // Explode or restore lane indicator brick
                 if (!hasData) {
@@ -603,8 +620,8 @@
                     restoreLaneIndicator(laneNum);
                 }
 
-                // Pre-race lineup display (show when in lineup mode)
-                if (hasData && displayMode === 'lineup') {
+                // Pre-race lineup display (only show lanes with names)
+                if (hasLaneNumber && hasName && displayMode === 'lineup') {
                     lineupLane.textContent = laneData.LaneNumber;
                     lineupName.textContent = laneData.AthleteName;
                     lineupTeam.textContent = laneData.Team || '';
@@ -629,7 +646,7 @@
                 }
 
                 if (shouldShowFinal) {
-                    swimmerName.textContent = laneData.AthleteName;
+                    swimmerName.textContent = hasName ? laneData.AthleteName : `LANE ${laneData.LaneNumber.trim()}`;
                     finalTime.textContent = laneData.FinalTime;
                     laneContent.classList.remove('first-place', 'second-place', 'third-place');
 
