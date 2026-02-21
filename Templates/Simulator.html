@@ -404,6 +404,7 @@
         </div>
     </div>
 
+    <script src="../LogCompressor.js"></script>
     <script>
         const NUM_LANES = 10;
         let timerInterval = null;
@@ -1122,7 +1123,12 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    replayEntries = JSON.parse(e.target.result);
+                    var parsed = JSON.parse(e.target.result);
+                    if (parsed.version && parsed.baseline) {
+                        replayEntries = LogCompressor.decompress(parsed);
+                    } else {
+                        replayEntries = parsed;
+                    }
                     replayIndex = 0;
                     document.getElementById('replayStatus').textContent = `Loaded ${replayEntries.length} entries from ${file.name}`;
                     document.getElementById('replayPlayBtn').disabled = false;
