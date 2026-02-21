@@ -3,6 +3,36 @@
 
   var DELETED = '__$DEL$__';
   var RT_SENTINEL = '=RT';
+  var TICK_SENTINEL = '=TICK';
+
+  // Parse RunningTime string " M:SS.T " to integer tenths (avoids float issues)
+  function parseRT(str) {
+    if (!str || str.length < 7) return null;
+    var minStr = str.substring(0, 2).trim();
+    var secStr = str.substring(3, 5).trim();
+    var tenStr = str.charAt(6);
+    var minutes = minStr.length > 0 ? parseInt(minStr, 10) : 0;
+    var seconds = secStr.length > 0 ? parseInt(secStr, 10) : 0;
+    var tenths = parseInt(tenStr, 10);
+    if (isNaN(minutes) || isNaN(seconds) || isNaN(tenths)) return null;
+    return minutes * 600 + seconds * 10 + tenths;
+  }
+
+  // Format integer tenths back to the exact padded " M:SS.T " string
+  function formatRT(tenths) {
+    var minutes = Math.floor(tenths / 600);
+    var remaining = tenths % 600;
+    var seconds = Math.floor(remaining / 10);
+    var t = remaining % 10;
+    var minPart = minutes === 0 ? '  ' : (minutes < 10 ? ' ' + minutes : '' + minutes);
+    var secPart;
+    if (minutes > 0) {
+      secPart = (seconds < 10 ? '0' : '') + seconds;
+    } else {
+      secPart = (seconds < 10 ? ' ' : '') + seconds;
+    }
+    return minPart + ':' + secPart + '.' + t + ' ';
+  }
 
   function deepClone(obj) {
     return JSON.parse(JSON.stringify(obj));
@@ -164,6 +194,31 @@
     }
   }
 
+  // Replace RunningTime with =TICK when it increments by exactly +0.1s (mutates in place)
+  // Returns the REAL tenths value for tracking across entries
+  function sentinelizeClock(data, prevRealTenths) {
+    if (!data || !data.swimming || !data.swimming.RunningTime) return prevRealTenths;
+    var rtString = data.swimming.RunningTime;
+    var tenths = parseRT(rtString);
+    if (tenths === null) return prevRealTenths;
+    if (prevRealTenths !== null && tenths === prevRealTenths + 1) {
+      data.swimming.RunningTime = TICK_SENTINEL;
+    }
+    return tenths;
+  }
+
+  // Resolve =TICK sentinels in output clone, returning resolved tenths for chaining
+  function resolveClockSentinels(state, prevResolvedTenths) {
+    if (!state || !state.swimming) return prevResolvedTenths;
+    if (state.swimming.RunningTime === TICK_SENTINEL) {
+      var resolved = prevResolvedTenths + 1;
+      state.swimming.RunningTime = formatRT(resolved);
+      return resolved;
+    }
+    var tenths = parseRT(state.swimming.RunningTime);
+    return tenths !== null ? tenths : prevResolvedTenths;
+  }
+
   function compress(entries) {
     if (!entries || entries.length === 0) {
       return { version: 1, baseline: null, deltas: [] };
@@ -171,6 +226,7 @@
 
     var sentineledBaseline = deepClone(entries[0].data);
     sentinelizeRT(sentineledBaseline);
+    var prevRealTenths = sentinelizeClock(sentineledBaseline, null);
 
     var result = {
       version: 1,
@@ -183,6 +239,7 @@
     for (var i = 1; i < entries.length; i++) {
       var sentineledCurr = deepClone(entries[i].data);
       sentinelizeRT(sentineledCurr);
+      prevRealTenths = sentinelizeClock(sentineledCurr, prevRealTenths);
       var d = diff(prevData, sentineledCurr);
       var delta = { t: entries[i].t };
       if (d !== undefined) {
@@ -215,8 +272,9 @@
 
     var baselineData = remapKeys(deepClone(compressed.baseline.data), revMap);
     var state = baselineData;
-    // Keep =RT in live state; resolve on output clone
+    // Keep sentinels in live state; resolve on output clones
     var baselineOut = deepClone(state);
+    var prevResolvedTenths = resolveClockSentinels(baselineOut, null);
     resolveRTSentinels(baselineOut);
     var entries = [{ t: compressed.baseline.t, data: baselineOut }];
 
@@ -227,6 +285,7 @@
         state = applyDelta(state, expandedDelta);
       }
       var out = deepClone(state);
+      prevResolvedTenths = resolveClockSentinels(out, prevResolvedTenths);
       resolveRTSentinels(out);
       entries.push({ t: delta.t, data: out });
     }
@@ -367,6 +426,7 @@
     sentinelizeRT(sentineled);
 
     if (compressed === null) {
+      var prevRealTenths = sentinelizeClock(sentineled, null);
       var dict = {};   // short -> long
       var map = {};    // long -> short
       var codeCounter = assignNewCodes(sentineled, dict, map, 0);
@@ -377,10 +437,12 @@
         _prevData: sentineled,
         _dict: dict,
         _map: map,
-        _codeCounter: codeCounter
+        _codeCounter: codeCounter,
+        _prevRealTenths: prevRealTenths
       };
     }
 
+    var prevRealTenths = sentinelizeClock(sentineled, compressed._prevRealTenths);
     var d = diff(compressed._prevData, sentineled);
     var delta = { t: t };
     if (d !== undefined) {
@@ -389,6 +451,7 @@
     }
     compressed.deltas.push(delta);
     compressed._prevData = sentineled;
+    compressed._prevRealTenths = prevRealTenths;
     return compressed;
   }
 

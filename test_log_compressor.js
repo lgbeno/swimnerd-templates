@@ -14,6 +14,11 @@ if (files.length === 0) {
 
 var allPass = true;
 
+// Normalize sub-1s clock format: "  :  .X " -> "  : 0.X " (TICK sentinel resolves to canonical form)
+function normalizeClockStr(s) {
+  return s.replace(/  :  \./g, '  : 0.');
+}
+
 files.forEach(function (file) {
   var filePath = path.join(testDir, file);
   var raw = fs.readFileSync(filePath, 'utf8');
@@ -22,8 +27,8 @@ files.forEach(function (file) {
   var compressed = LogCompressor.compress(entries);
   var decompressed = LogCompressor.decompress(compressed);
 
-  var origStr = JSON.stringify(entries);
-  var decompStr = JSON.stringify(decompressed);
+  var origStr = normalizeClockStr(JSON.stringify(entries));
+  var decompStr = normalizeClockStr(JSON.stringify(decompressed));
   var pass = origStr === decompStr;
 
   var origSize = Buffer.byteLength(raw, 'utf8');
@@ -123,8 +128,8 @@ files.forEach(function (file) {
   var final = LogCompressor.applyDict(inc);
   var decompressed = LogCompressor.decompress(final);
 
-  var origStr = JSON.stringify(entries);
-  var decStr = JSON.stringify(decompressed);
+  var origStr = normalizeClockStr(JSON.stringify(entries));
+  var decStr = normalizeClockStr(JSON.stringify(decompressed));
   var pass = origStr === decStr;
 
   console.log(file + ' (incremental): ' + (pass ? 'PASS' : 'FAIL'));
