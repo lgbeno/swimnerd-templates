@@ -405,6 +405,7 @@
         let displayMode = 'lineup';
         let firstMessageReceived = false;
         let laneIndicatorHidden = new Array(NUM_LANES).fill(false);
+        let explodeTimeouts = new Array(NUM_LANES).fill(null);
 
         function explodeLaneIndicator(laneNum) {
             const el = document.querySelector(`#lane-${laneNum} .lane-indicator`);
@@ -432,13 +433,22 @@
             }
 
             el.classList.add('brick-explode');
-            setTimeout(() => { el.style.visibility = 'hidden'; }, 400);
+            if (explodeTimeouts[laneNum - 1]) clearTimeout(explodeTimeouts[laneNum - 1]);
+            explodeTimeouts[laneNum - 1] = setTimeout(() => {
+                el.style.visibility = 'hidden';
+                explodeTimeouts[laneNum - 1] = null;
+            }, 400);
         }
 
         function restoreLaneIndicator(laneNum) {
             const el = document.querySelector(`#lane-${laneNum} .lane-indicator`);
             if (!el || !laneIndicatorHidden[laneNum - 1]) return;
             laneIndicatorHidden[laneNum - 1] = false;
+            // Cancel pending hide timeout to prevent it from firing after restore
+            if (explodeTimeouts[laneNum - 1]) {
+                clearTimeout(explodeTimeouts[laneNum - 1]);
+                explodeTimeouts[laneNum - 1] = null;
+            }
             el.classList.remove('brick-explode');
             el.style.visibility = '';
         }
@@ -515,6 +525,18 @@
                     : null;
 
                 laneActivated[laneCounter] = false;
+
+                // Reset lane indicator state so it can re-explode/restore cleanly
+                if (explodeTimeouts[laneCounter]) {
+                    clearTimeout(explodeTimeouts[laneCounter]);
+                    explodeTimeouts[laneCounter] = null;
+                }
+                laneIndicatorHidden[laneCounter] = false;
+                const indicator = document.querySelector(`#lane-${laneNum} .lane-indicator`);
+                if (indicator) {
+                    indicator.classList.remove('brick-explode');
+                    indicator.style.visibility = '';
+                }
             }
         }
 
