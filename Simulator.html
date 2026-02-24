@@ -531,6 +531,24 @@
                 });
             }
 
+            // Padding lanes 9-10 to match real ACS scoreboard format
+            for (let i = NUM_LANES + 1; i <= 10; i++) {
+                lanes.push({
+                    LaneID: i,
+                    LaneNumber: " ",
+                    AthleteName: "",
+                    Team: "",
+                    SplitTime: "",
+                    FinalTime: "",
+                    Place: " ",
+                    Firstname: "",
+                    Middlename: "",
+                    Lastname: "",
+                    NameFormatDisplayAs: 9,
+                    NameCaseDisplayAs: 0
+                });
+            }
+
             const eventNumber = parseInt(document.getElementById('eventNumber').value) || 0;
             const heatNumber = parseInt(document.getElementById('heatNumber').value) || 0;
             const eventName = document.getElementById('eventName').value;
@@ -596,10 +614,11 @@
         // Time formatting to match real scoreboard output
         function formatRunningTime(totalSeconds) {
             const mins = Math.floor(totalSeconds / 60);
-            const secs = (totalSeconds % 60).toFixed(1).padStart(4, '0');
             if (mins > 0) {
+                const secs = (totalSeconds % 60).toFixed(1).padStart(4, '0');
                 return ` ${mins}:${secs} `;
             }
+            const secs = (totalSeconds % 60).toFixed(1).padStart(4, ' ');
             return `  :${secs} `;
         }
 
