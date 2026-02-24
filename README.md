@@ -78,6 +78,53 @@ Add each overlay as a Browser Source in OBS, pointing to the local file paths or
 
 For same-machine OBS, the BroadcastChannel works with no additional setup. For remote machines, run the WebSocket server and ensure both the Simulator and OBS machine can reach it.
 
+## Creating a New Theme with Claude Code
+
+You can use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to generate a complete theme from a written description. Here's the workflow:
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/lgbeno/swimnerd-templates.git
+cd swimnerd-templates
+```
+
+### 2. Create your theme folder with a spec document
+
+```bash
+mkdir themes/my-theme
+```
+
+Write a design specification document (`.docx`, `.md`, or `.txt`) and place it in your theme folder. This document should describe the visual style you want — colors, fonts, animations, decorative elements, and overall feel. See `themes/spooky/Spooky Splash Spectacular Theme.docx` for an example of a spec that was used to generate the Spooky theme.
+
+Your spec should cover:
+- **Color palette** — primary, secondary, accent, and background colors
+- **Typography** — font choices and sizing
+- **Visual style** — gradients, borders, shadows, textures
+- **Animations** — how elements appear, disappear, and transition
+- **Decorative elements** — mascots, icons, or themed ornaments
+- **Overall mood** — the theme or occasion (e.g., championship, holiday, school spirit)
+
+### 3. Launch Claude Code and generate the theme
+
+```bash
+claude
+```
+
+Ask Claude to read your spec document and the theme authoring guide (`themes/THEME_SPEC.md`), then generate the three overlay HTML files:
+
+> Read my theme spec at `themes/my-theme/my-spec.docx` and the theme guide at `themes/THEME_SPEC.md`, then create `HeaderOverlay.html`, `LaneOverlay.html`, and `TimerOverlay.html` in `themes/my-theme/`.
+
+### 4. Register your theme in the Simulator
+
+Add your theme to the dropdown in `Simulator.html`:
+
+> Add "my-theme" to the theme selector dropdown in `Simulator.html`.
+
+### 5. Test with the Simulator
+
+Open `Simulator.html` in a browser, select your theme from the dropdown, and run a simulation to verify all three overlays display correctly. Iterate with Claude Code to refine colors, animations, or layout until you're happy with the result.
+
 ## Data Format
 
 The system broadcasts JSON in this structure:
