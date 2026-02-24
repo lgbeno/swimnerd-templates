@@ -2,13 +2,13 @@ var fs = require('fs');
 var path = require('path');
 var LogCompressor = require('./LogCompressor');
 
-var testDir = path.join(__dirname, 'TestLogs');
+var testDir = path.join(__dirname, 'test_logs');
 var files = fs.readdirSync(testDir).filter(function (f) {
   return f.endsWith('.json') && f.indexOf('.compressed') === -1;
 });
 
 if (files.length === 0) {
-  console.log('No .json files found in TestLogs/');
+  console.log('No .json files found in test_logs/');
   process.exit(1);
 }
 
