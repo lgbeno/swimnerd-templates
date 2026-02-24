@@ -108,12 +108,13 @@ The system broadcasts JSON in this structure:
 ```
 ├── Simulator.html               # Main control interface
 ├── DataLogger.html              # WebSocket data logger
-├── LogCompressor.js             # Log compression utility
 ├── js/                          # Shared overlay logic
 │   ├── overlay-core.js
 │   ├── lane-overlay.js
 │   ├── timer-overlay.js
-│   └── header-overlay.js
+│   ├── header-overlay.js
+│   ├── LogCompressor.js
+│   └── test_log_compressor.js
 ├── css/                         # Structural layout CSS
 │   ├── lane-structure.css
 │   ├── timer-structure.css
