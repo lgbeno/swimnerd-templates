@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lane Overlay — Spooky</title>
+    <link rel="stylesheet" href="../../css/lane-structure.css">
+    <style>
+        /* ===== SPOOKY SPLASH SPECTACULAR THEME CSS ===== */
+        @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+
+        :root {
+            --theme-font: 'Creepster', cursive;
+            --spooky-orange: #ff6600;
+            --spooky-purple: #4a0e4e;
+            --spooky-purple-light: #6b2070;
+            --spooky-purple-dark: #2d0630;
+            --spooky-green: #00cc44;
+            --spooky-yellow: #ffcc00;
+            --spooky-brown: #8B4513;
+            --spooky-black: #1a0a2e;
+            --border-width: 3px;
+            --border-radius: 8px;
+            --shadow-color: rgba(0, 0, 0, 0.6);
+        }
+
+        body { font-family: var(--theme-font); }
+
+        /* Main lane content box — dark purple with orange border */
+        .lane-content {
+            background: linear-gradient(180deg, var(--spooky-purple-light) 0%, var(--spooky-purple) 50%, var(--spooky-purple-dark) 100%);
+            border: var(--border-width) solid var(--spooky-orange);
+            border-radius: var(--border-radius);
+            box-shadow:
+                inset 0 -4px 0 rgba(0,0,0,0.4),
+                0 4px 10px var(--shadow-color),
+                0 0 15px rgba(255, 102, 0, 0.2);
+        }
+
+        .lane-content.visible {
+            animation: slideInRight 0.5s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+        }
+
+        .lane-content.hiding {
+            animation: fadeAway 0.25s ease-out forwards;
+        }
+
+        @keyframes slideInRight {
+            0% { transform: translateX(100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeAway {
+            0% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(0); opacity: 0; }
+        }
+
+        /* Lineup content — dark green/purple accents */
+        .lineup-content {
+            background: linear-gradient(180deg, #1a3a1a 0%, #0d2e0d 50%, #0a1f0a 100%);
+            border: var(--border-width) solid var(--spooky-green);
+            border-radius: var(--border-radius);
+            box-shadow:
+                inset 0 -4px 0 rgba(0,0,0,0.4),
+                0 4px 10px var(--shadow-color),
+                0 0 15px rgba(0, 204, 68, 0.2);
+        }
+
+        .lineup-content.visible {
+            animation: slideInRight 0.5s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+        }
+
+        .lineup-content.hiding {
+            animation: ghostExplode 0.35s ease-out forwards;
+        }
+
+        @keyframes ghostExplode {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.5; filter: blur(2px); }
+            100% { transform: scale(1.8); opacity: 0; filter: blur(6px); }
+        }
+
+        .lineup-name {
+            font-size: 1.1rem;
+            color: #fff;
+            text-shadow: 0 0 8px rgba(255,255,255,0.3), 2px 2px 0 #000;
+        }
+
+        .lineup-team {
+            font-size: 0.9rem;
+            color: var(--spooky-orange);
+            text-shadow: 0 0 6px rgba(255, 102, 0, 0.4), 2px 2px 0 #000;
+        }
+
+        .lineup-lane {
+            font-size: 1.5rem;
+            color: var(--spooky-yellow);
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5), 2px 2px 0 #000;
+        }
+
+        .place-indicator {
+            font-size: 1.5rem;
+            color: var(--spooky-yellow);
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5), 2px 2px 0 #000;
+        }
+
+        .swimmer-name {
+            font-size: 1.1rem;
+            color: #fff;
+            text-shadow: 0 0 8px rgba(255,255,255,0.3), 2px 2px 0 #000;
+        }
+
+        .final-time {
+            font-size: 1.4rem;
+            color: var(--spooky-orange);
+            text-shadow: 0 0 10px rgba(255, 102, 0, 0.5), 2px 2px 0 #000;
+        }
+
+        /* === First place — Glowing pumpkin orange pulse === */
+        .lane-content.first-place {
+            background: linear-gradient(180deg, #ff8c00 0%, #ff6600 50%, #cc4400 100%) !important;
+            border-color: var(--spooky-yellow) !important;
+            box-shadow:
+                inset 0 -4px 0 rgba(0,0,0,0.3),
+                0 4px 10px var(--shadow-color),
+                0 0 30px rgba(255, 140, 0, 0.7),
+                0 0 60px rgba(255, 102, 0, 0.4) !important;
+        }
+
+        .lane-content.first-place .swimmer-name {
+            color: #000;
+            text-shadow: 0 0 8px rgba(255,255,255,0.5), 1px 1px 0 rgba(255,255,255,0.3);
+        }
+
+        .lane-content.first-place .final-time,
+        .lane-content.first-place .place-indicator {
+            color: #fff;
+            text-shadow: 0 0 15px rgba(255,204,0,0.8), 2px 2px 0 #000;
+        }
+
+        /* Second place — Silver moonlight */
+        .lane-content.second-place {
+            background: linear-gradient(180deg, #8a8a9e 0%, #6a6a80 50%, #4a4a60 100%) !important;
+            border-color: #c0c0c0 !important;
+            box-shadow:
+                inset 0 -4px 0 rgba(0,0,0,0.3),
+                0 4px 10px var(--shadow-color),
+                0 0 15px rgba(192, 192, 192, 0.3) !important;
+        }
+
+        /* Third place — Bronze/copper cauldron */
+        .lane-content.third-place {
+            background: linear-gradient(180deg, #cd7f32 0%, #a0622a 50%, #7a4a1e 100%) !important;
+            border-color: #cd7f32 !important;
+            box-shadow:
+                inset 0 -4px 0 rgba(0,0,0,0.3),
+                0 4px 10px var(--shadow-color),
+                0 0 15px rgba(205, 127, 50, 0.3) !important;
+        }
+
+        /* === Carved Jack-o-Lantern Lane Indicators === */
+        .lane-indicator {
+            background: radial-gradient(ellipse at 50% 60%, #ff8c00 0%, #ff6600 60%, #cc4400 100%);
+            border: 3px solid var(--spooky-brown);
+            border-radius: 50%;
+            box-shadow:
+                inset 0 -6px 10px rgba(0,0,0,0.3),
+                inset 0 6px 10px rgba(255,200,0,0.2),
+                0 4px 10px var(--shadow-color),
+                0 0 20px rgba(255, 102, 0, 0.4);
+            font-size: 1.5rem;
+            color: #000;
+            text-shadow: 0 0 8px #ff6600, 0 0 16px #ff4400;
+            overflow: visible;
+        }
+
+        /* Pumpkin stem */
+        .lane-indicator::before {
+            content: "";
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 10px;
+            background: linear-gradient(180deg, #2d5a1e, #228B22);
+            border-radius: 2px 2px 0 0;
+            z-index: 1;
+        }
+
+        /* Pumpkin ridges effect */
+        .lane-indicator::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent 0%,
+                transparent 18%,
+                rgba(0,0,0,0.1) 18%,
+                rgba(0,0,0,0.1) 22%,
+                transparent 22%
+            );
+            pointer-events: none;
+        }
+
+        /* Split time — dark with green accent */
+        .split-content {
+            background: linear-gradient(180deg, #1a3a1a 0%, #0d2e0d 50%, #0a1f0a 100%);
+            border: var(--border-width) solid var(--spooky-green);
+            border-radius: var(--border-radius);
+            box-shadow:
+                inset 0 -3px 0 rgba(0,0,0,0.4),
+                0 3px 8px var(--shadow-color),
+                0 0 10px rgba(0, 204, 68, 0.2);
+        }
+
+        .split-content::before { display: none; }
+
+        .split-content.visible {
+            animation: splitSlideIn 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+        }
+
+        .split-content.hiding {
+            animation: splitSlideOut 0.3s ease-in forwards;
+        }
+
+        @keyframes splitSlideIn {
+            0% { transform: translateX(100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes splitSlideOut {
+            0% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(-100%); opacity: 0; }
+        }
+
+        .split-time {
+            font-size: 1.4rem;
+            color: var(--spooky-green);
+            text-shadow: 0 0 10px rgba(0, 204, 68, 0.5), 2px 2px 0 #000;
+        }
+
+        /* === Spider Web overlay for Race Done === */
+        .spider-web-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 500px;
+            height: 500px;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .spider-web-container.active {
+            opacity: 1;
+        }
+
+        .spider-web-container.fading {
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        /* Spider web SVG drawing animation */
+        .spider-web-container svg .web-strand {
+            stroke-dasharray: 600;
+            stroke-dashoffset: 600;
+        }
+
+        .spider-web-container.active svg .web-strand {
+            animation: drawWeb 2s ease-out forwards;
+        }
+
+        .spider-web-container.active svg .web-strand:nth-child(2) { animation-delay: 0.15s; }
+        .spider-web-container.active svg .web-strand:nth-child(3) { animation-delay: 0.3s; }
+        .spider-web-container.active svg .web-strand:nth-child(4) { animation-delay: 0.45s; }
+        .spider-web-container.active svg .web-strand:nth-child(5) { animation-delay: 0.6s; }
+        .spider-web-container.active svg .web-strand:nth-child(6) { animation-delay: 0.75s; }
+        .spider-web-container.active svg .web-strand:nth-child(7) { animation-delay: 0.9s; }
+        .spider-web-container.active svg .web-strand:nth-child(8) { animation-delay: 1.05s; }
+        .spider-web-container.active svg .web-ring { animation-delay: 1.2s; }
+        .spider-web-container.active svg .web-ring:nth-child(10) { animation-delay: 1.4s; }
+        .spider-web-container.active svg .web-ring:nth-child(11) { animation-delay: 1.6s; }
+        .spider-web-container.active svg .web-ring:nth-child(12) { animation-delay: 1.8s; }
+        .spider-web-container.active svg .web-ring:nth-child(13) { animation-delay: 2.0s; }
+
+        .spider-web-container.active svg .web-ring {
+            stroke-dasharray: 800;
+            stroke-dashoffset: 800;
+            animation: drawWeb 1.5s ease-out forwards;
+        }
+
+        @keyframes drawWeb {
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* Spider drops down */
+        .spider {
+            position: absolute;
+            top: -50px;
+            left: 195px;
+            opacity: 0;
+        }
+
+        .spider-web-container.active .spider {
+            animation: spiderDrop 1.5s ease-in-out 1.8s forwards;
+        }
+
+        @keyframes spiderDrop {
+            0% { top: -50px; opacity: 0; }
+            20% { opacity: 1; }
+            60% { top: 260px; }
+            70% { top: 245px; }
+            80% { top: 255px; }
+            100% { top: 250px; opacity: 1; }
+        }
+
+        /* Spider thread */
+        .spider-thread {
+            position: absolute;
+            top: 0;
+            left: 210px;
+            width: 2px;
+            height: 0;
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .spider-web-container.active .spider-thread {
+            animation: threadDrop 1.5s ease-in-out 1.8s forwards;
+        }
+
+        @keyframes threadDrop {
+            0% { height: 0; }
+            100% { height: 255px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Placeholder shown until first data received -->
+    <div class="placeholder-container" id="placeholder">
+        <div class="placeholder-lane lineup-content visible">
+            <span class="placeholder-text">Waiting for data...</span>
+        </div>
+        <div class="placeholder-lane lineup-content visible">
+            <span class="placeholder-text">Lane overlay ready</span>
+        </div>
+    </div>
+
+    <!-- Spider web overlay (shown when race is done) -->
+    <div class="spider-web-container" id="spiderWeb">
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <!-- Radial strands from corner -->
+            <line class="web-strand" x1="0" y1="0" x2="400" y2="400" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" fill="none"/>
+            <line class="web-strand" x1="0" y1="0" x2="400" y2="200" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" fill="none"/>
+            <line class="web-strand" x1="0" y1="0" x2="200" y2="400" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" fill="none"/>
+            <line class="web-strand" x1="0" y1="0" x2="400" y2="80" stroke="rgba(255,255,255,0.6)" stroke-width="2" fill="none"/>
+            <line class="web-strand" x1="0" y1="0" x2="80" y2="400" stroke="rgba(255,255,255,0.6)" stroke-width="2" fill="none"/>
+            <line class="web-strand" x1="0" y1="0" x2="400" y2="300" stroke="rgba(255,255,255,0.65)" stroke-width="2" fill="none"/>
+            <line class="web-strand" x1="0" y1="0" x2="300" y2="400" stroke="rgba(255,255,255,0.65)" stroke-width="2" fill="none"/>
+            <line class="web-strand" x1="0" y1="0" x2="350" y2="130" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" fill="none"/>
+            <!-- Concentric arcs -->
+            <path class="web-ring" d="M 50,0 Q 50,50 0,50" stroke="rgba(255,255,255,0.6)" stroke-width="2" fill="none"/>
+            <path class="web-ring" d="M 120,0 Q 120,120 0,120" stroke="rgba(255,255,255,0.65)" stroke-width="2" fill="none"/>
+            <path class="web-ring" d="M 200,0 Q 200,200 0,200" stroke="rgba(255,255,255,0.6)" stroke-width="2" fill="none"/>
+            <path class="web-ring" d="M 290,0 Q 290,290 0,290" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" fill="none"/>
+            <path class="web-ring" d="M 370,0 Q 370,370 0,370" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" fill="none"/>
+        </svg>
+        <div class="spider-thread"></div>
+        <div class="spider">
+            <svg viewBox="0 0 30 30" width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+                <!-- Body -->
+                <ellipse cx="15" cy="18" rx="6" ry="7" fill="#1a0a2e"/>
+                <circle cx="15" cy="10" r="5" fill="#1a0a2e"/>
+                <!-- Eyes -->
+                <circle cx="13" cy="9" r="1.5" fill="#ff6600"/>
+                <circle cx="17" cy="9" r="1.5" fill="#ff6600"/>
+                <!-- Legs -->
+                <line x1="10" y1="14" x2="2" y2="8" stroke="#1a0a2e" stroke-width="1.5"/>
+                <line x1="10" y1="17" x2="1" y2="16" stroke="#1a0a2e" stroke-width="1.5"/>
+                <line x1="10" y1="20" x2="2" y2="24" stroke="#1a0a2e" stroke-width="1.5"/>
+                <line x1="10" y1="22" x2="4" y2="28" stroke="#1a0a2e" stroke-width="1.5"/>
+                <line x1="20" y1="14" x2="28" y2="8" stroke="#1a0a2e" stroke-width="1.5"/>
+                <line x1="20" y1="17" x2="29" y2="16" stroke="#1a0a2e" stroke-width="1.5"/>
+                <line x1="20" y1="20" x2="28" y2="24" stroke="#1a0a2e" stroke-width="1.5"/>
+                <line x1="20" y1="22" x2="26" y2="28" stroke="#1a0a2e" stroke-width="1.5"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="lanes-container">
+        <div class="lane-box" id="lane-8">
+            <div class="lane-indicator">8</div>
+            <div class="lineup-content" id="lineupContent-8">
+                <div class="lineup-lane" id="lineupLane-8"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-8"></span>
+                    <span class="lineup-team" id="lineupTeam-8"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-8">
+                <div class="place-indicator" id="place-8"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-8"></span>
+                    <span class="final-time" id="finalTime-8"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-8">
+                <span class="split-time" id="splitTime-8"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-7">
+            <div class="lane-indicator">7</div>
+            <div class="lineup-content" id="lineupContent-7">
+                <div class="lineup-lane" id="lineupLane-7"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-7"></span>
+                    <span class="lineup-team" id="lineupTeam-7"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-7">
+                <div class="place-indicator" id="place-7"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-7"></span>
+                    <span class="final-time" id="finalTime-7"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-7">
+                <span class="split-time" id="splitTime-7"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-6">
+            <div class="lane-indicator">6</div>
+            <div class="lineup-content" id="lineupContent-6">
+                <div class="lineup-lane" id="lineupLane-6"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-6"></span>
+                    <span class="lineup-team" id="lineupTeam-6"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-6">
+                <div class="place-indicator" id="place-6"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-6"></span>
+                    <span class="final-time" id="finalTime-6"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-6">
+                <span class="split-time" id="splitTime-6"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-5">
+            <div class="lane-indicator">5</div>
+            <div class="lineup-content" id="lineupContent-5">
+                <div class="lineup-lane" id="lineupLane-5"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-5"></span>
+                    <span class="lineup-team" id="lineupTeam-5"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-5">
+                <div class="place-indicator" id="place-5"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-5"></span>
+                    <span class="final-time" id="finalTime-5"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-5">
+                <span class="split-time" id="splitTime-5"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-4">
+            <div class="lane-indicator">4</div>
+            <div class="lineup-content" id="lineupContent-4">
+                <div class="lineup-lane" id="lineupLane-4"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-4"></span>
+                    <span class="lineup-team" id="lineupTeam-4"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-4">
+                <div class="place-indicator" id="place-4"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-4"></span>
+                    <span class="final-time" id="finalTime-4"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-4">
+                <span class="split-time" id="splitTime-4"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-3">
+            <div class="lane-indicator">3</div>
+            <div class="lineup-content" id="lineupContent-3">
+                <div class="lineup-lane" id="lineupLane-3"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-3"></span>
+                    <span class="lineup-team" id="lineupTeam-3"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-3">
+                <div class="place-indicator" id="place-3"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-3"></span>
+                    <span class="final-time" id="finalTime-3"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-3">
+                <span class="split-time" id="splitTime-3"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-2">
+            <div class="lane-indicator">2</div>
+            <div class="lineup-content" id="lineupContent-2">
+                <div class="lineup-lane" id="lineupLane-2"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-2"></span>
+                    <span class="lineup-team" id="lineupTeam-2"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-2">
+                <div class="place-indicator" id="place-2"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-2"></span>
+                    <span class="final-time" id="finalTime-2"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-2">
+                <span class="split-time" id="splitTime-2"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-1">
+            <div class="lane-indicator">1</div>
+            <div class="lineup-content" id="lineupContent-1">
+                <div class="lineup-lane" id="lineupLane-1"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-1"></span>
+                    <span class="lineup-team" id="lineupTeam-1"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-1">
+                <div class="place-indicator" id="place-1"></div>
+                <div class="lane-info">
+                    <span class="swimmer-name" id="swimmerName-1"></span>
+                    <span class="final-time" id="finalTime-1"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-1">
+                <span class="split-time" id="splitTime-1"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/overlay-core.js"></script>
+    <script src="../../js/lane-overlay.js"></script>
+    <script>
+        // Autumn fragment colors
+        SwimOverlay.fragmentColors = ['#ff6600', '#8B4513', '#cc5500', '#ff9933'];
+
+        // Spider web trigger — detect when race transitions to 'results'
+        let lastDisplayMode = 'lineup';
+        let spiderActive = false;
+
+        function showSpiderWeb() {
+            if (spiderActive) return;
+            spiderActive = true;
+            const web = document.getElementById('spiderWeb');
+            web.classList.remove('fading');
+            web.classList.add('active');
+        }
+
+        function hideSpiderWeb() {
+            if (!spiderActive) return;
+            spiderActive = false;
+            const web = document.getElementById('spiderWeb');
+            web.classList.remove('active');
+            web.classList.add('fading');
+            setTimeout(() => {
+                web.classList.remove('fading');
+            }, 1000);
+        }
+
+        function processSpookyLaneData(jsonData) {
+            processLaneData(jsonData);
+
+            // displayMode is set by lane-overlay.js — check for transitions
+            if (displayMode === 'results' && lastDisplayMode !== 'results') {
+                showSpiderWeb();
+            } else if (displayMode !== 'results' && lastDisplayMode === 'results') {
+                hideSpiderWeb();
+            }
+            lastDisplayMode = displayMode;
+        }
+
+        SwimOverlay.init({ onData: processSpookyLaneData, numLanes: 8 });
+    </script>
+</body>
+</html>

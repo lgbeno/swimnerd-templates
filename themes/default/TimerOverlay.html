@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer Overlay — Default</title>
+    <link rel="stylesheet" href="../../css/timer-structure.css">
+    <style>
+        /* ===== DEFAULT THEME CSS ===== */
+        :root {
+            --theme-font: 'Arial', sans-serif;
+            --color-primary: rgba(0, 0, 0, 0.7);
+            --color-text-primary: rgba(255, 255, 255, 0.9);
+            --color-text-secondary: rgba(255, 255, 255, 0.7);
+            --border-radius: 4px;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+        }
+
+        body { font-family: var(--theme-font); }
+
+        .timer-content {
+            background: var(--color-primary);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+
+        .timer-content.visible {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .timer-content.hiding {
+            animation: fadeOut 0.3s ease-in forwards;
+        }
+
+        @keyframes fadeIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0; }
+        }
+
+        .timer-label {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        .running-time {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: var(--color-text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="timer-container">
+        <!-- Placeholder shown until first data received -->
+        <div class="placeholder-content timer-content visible" id="placeholder">
+            <span class="placeholder-text">Waiting for data...</span>
+        </div>
+
+        <div class="timer-content" id="timerContent">
+            <span class="timer-label">TIME</span>
+            <span class="running-time" id="runningTime"></span>
+        </div>
+    </div>
+
+    <script src="../../js/overlay-core.js"></script>
+    <script src="../../js/timer-overlay.js"></script>
+    <script>
+        SwimOverlay.init({ onData: processTimerData });
+    </script>
+</body>
+</html>

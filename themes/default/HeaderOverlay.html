@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Header Overlay — Default</title>
+    <link rel="stylesheet" href="../../css/header-structure.css">
+    <style>
+        /* ===== DEFAULT THEME CSS ===== */
+        :root {
+            --theme-font: 'Arial', sans-serif;
+            --color-primary: rgba(0, 0, 0, 0.7);
+            --color-text-primary: rgba(255, 255, 255, 0.9);
+            --color-text-secondary: rgba(255, 255, 255, 0.7);
+            --border-radius: 4px;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+        }
+
+        body { font-family: var(--theme-font); }
+
+        .header-box.fixed .header-content {
+            background: var(--color-primary);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+
+        .header-box.stretch .header-content {
+            background: var(--color-primary);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+
+        .header-box.stretch .header-content::before,
+        .header-box.stretch .header-content::after {
+            display: none;
+        }
+
+        .header-content.visible {
+            animation: fadeSlideDown 0.4s ease-out forwards;
+        }
+
+        .header-content.hiding {
+            animation: fadeSlideUp 0.3s ease-in forwards;
+        }
+
+        #eventBox .header-content.visible { animation-delay: 0s; }
+        #heatBox .header-content.visible { animation-delay: 0.1s; }
+        #nameBox .header-content.visible { animation-delay: 0.2s; }
+
+        /* Explode/appear for event/heat number changes */
+        #eventBox .header-content.exploding,
+        #heatBox .header-content.exploding {
+            animation: fadeSlideUp 0.3s ease-in forwards !important;
+        }
+
+        #eventBox .header-content.appearing,
+        #heatBox .header-content.appearing {
+            animation: fadeSlideDown 0.3s ease-out forwards !important;
+        }
+
+        @keyframes fadeSlideDown {
+            0% { transform: translateY(-100%); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeSlideUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100%); opacity: 0; }
+        }
+
+        .label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        .value {
+            font-size: 2rem;
+            color: var(--color-text-primary);
+        }
+
+        .event-name {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+
+        .event-name-copy {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Placeholder shown until first data received -->
+    <div class="placeholder-container" id="placeholder">
+        <div class="placeholder-box event header-content visible">
+            <span class="placeholder-text">Waiting...</span>
+        </div>
+        <div class="placeholder-box heat header-content visible">
+            <span class="placeholder-text">Waiting...</span>
+        </div>
+        <div class="placeholder-box name header-content visible">
+            <span class="placeholder-text">Waiting for data...</span>
+        </div>
+        <div class="placeholder-box timer header-content visible">
+            <span class="placeholder-text">0:00.0</span>
+        </div>
+    </div>
+
+    <div class="header-container">
+        <div class="header-box fixed" id="eventBox">
+            <div class="header-content" id="eventContent">
+                <span class="label">Event</span>
+                <span class="value" id="eventNumber"></span>
+            </div>
+        </div>
+        <div class="header-box fixed" id="heatBox">
+            <div class="header-content" id="heatContent">
+                <span class="label">Heat</span>
+                <span class="value" id="heatNumber"></span>
+            </div>
+        </div>
+        <div class="header-box stretch" id="nameBox">
+            <div class="header-content" id="nameContent">
+                <div class="event-name-wrapper" id="eventNameWrapper">
+                    <div class="event-name-track" id="eventNameTrack">
+                        <span class="event-name" id="eventName"></span>
+                        <span class="event-name event-name-copy" id="eventNameCopy"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Empty spacer where timer used to be -->
+        <div class="header-box fixed" id="timerBox" style="visibility: hidden;"></div>
+    </div>
+
+    <script src="../../js/overlay-core.js"></script>
+    <script src="../../js/header-overlay.js"></script>
+    <script>
+        SwimOverlay.init({ onData: processHeaderData });
+    </script>
+</body>
+</html>

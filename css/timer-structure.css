@@ -1,0 +1,64 @@
+/* ==================== */
+/* STRUCTURAL CSS ONLY  */
+/* (Layout, positioning) */
+/* ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: transparent;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.timer-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    overflow: visible;
+}
+
+.timer-content {
+    padding: 15px 30px 15px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: scale(0);
+    opacity: 0;
+    position: relative;
+    white-space: nowrap;
+}
+
+.timer-label {
+    margin-right: 15px;
+    margin-left: 5px;
+    text-transform: uppercase;
+}
+
+.running-time {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+}
+
+/* Placeholder styling */
+.placeholder-content {
+    padding: 15px 30px 15px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    opacity: 0.6;
+}
+
+.placeholder-content.hidden {
+    display: none;
+}
+
+.placeholder-text {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}

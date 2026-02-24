@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Header Overlay — Spooky</title>
+    <link rel="stylesheet" href="../../css/header-structure.css">
+    <style>
+        /* ===== SPOOKY SPLASH SPECTACULAR THEME CSS ===== */
+        @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+
+        :root {
+            --theme-font: 'Creepster', cursive;
+            --spooky-orange: #ff6600;
+            --spooky-purple: #4a0e4e;
+            --spooky-purple-light: #6b2070;
+            --spooky-green: #00cc44;
+            --spooky-yellow: #ffcc00;
+            --spooky-brown: #8B4513;
+            --spooky-black: #1a0a2e;
+            --border-width: 3px;
+            --border-radius: 8px;
+            --shadow-color: rgba(0, 0, 0, 0.6);
+        }
+
+        body { font-family: var(--theme-font); }
+
+        /* === Gravestone style for Event/Heat boxes === */
+        #eventBox .header-content,
+        #heatBox .header-content {
+            background: linear-gradient(180deg, #8a8a8a 0%, #6a6a6a 30%, #555 70%, #444 100%);
+            border: var(--border-width) solid #333;
+            border-radius: 45% 45% 4px 4px;
+            box-shadow:
+                inset 0 2px 4px rgba(255,255,255,0.2),
+                inset 0 -4px 0 rgba(0,0,0,0.4),
+                0 4px 12px var(--shadow-color),
+                0 0 15px rgba(0, 0, 0, 0.5);
+            flex-direction: column;
+            justify-content: center;
+            padding: 8px 15px;
+        }
+
+        /* Crack/weathering detail on gravestones */
+        #eventBox .header-content::before,
+        #heatBox .header-content::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 45% 45% 4px 4px;
+            background:
+                linear-gradient(160deg, transparent 40%, rgba(0,0,0,0.15) 41%, transparent 42%),
+                linear-gradient(200deg, transparent 55%, rgba(0,0,0,0.1) 56%, transparent 57%);
+            pointer-events: none;
+        }
+
+        /* === Coffin style for Event Name box === */
+        #nameBox .header-content {
+            background: linear-gradient(180deg, #4a2810 0%, #3a1e0a 30%, #2a1505 100%);
+            border: var(--border-width) solid #8B4513;
+            border-radius: var(--border-radius);
+            box-shadow:
+                inset 0 2px 4px rgba(255,255,255,0.1),
+                inset 0 -4px 0 rgba(0,0,0,0.5),
+                0 4px 12px var(--shadow-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Coffin wood grain texture */
+        #nameBox .header-content::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 30px,
+                rgba(0,0,0,0.08) 30px,
+                rgba(0,0,0,0.08) 31px
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #nameBox .header-content::after { display: none; }
+
+        /* === Timer box in header (LEFT side) === */
+        #timerBox {
+            visibility: visible !important;
+            overflow: visible;
+        }
+
+        #timerBox .header-content {
+            background: linear-gradient(180deg, var(--spooky-purple-light) 0%, var(--spooky-purple) 50%, #2d0630 100%);
+            border: var(--border-width) solid var(--spooky-orange);
+            border-radius: var(--border-radius);
+            box-shadow:
+                inset 0 -4px 0 rgba(0,0,0,0.4),
+                0 4px 12px var(--shadow-color),
+                0 0 15px rgba(255, 102, 0, 0.3);
+            justify-content: center;
+        }
+
+        .header-zombie {
+            flex-shrink: 0;
+            margin-right: 8px;
+            margin-top: -6px;
+        }
+
+        .header-zombie svg {
+            display: block;
+        }
+
+        /* Zombie walking animation when timer is visible */
+        #timerContent.visible .header-zombie {
+            animation: zombieWalk 0.5s steps(2) infinite;
+        }
+
+        @keyframes zombieWalk {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px) rotate(1deg); }
+        }
+
+        .timer-text-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .timer-value {
+            font-size: 1.6rem;
+            color: var(--spooky-green);
+            text-shadow: 0 0 10px rgba(0, 204, 68, 0.6), 0 0 20px rgba(0, 204, 68, 0.3), 2px 2px 0 #000;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+        }
+
+        .timer-label-header {
+            font-size: 0.8rem;
+            color: var(--spooky-orange);
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            margin-right: 10px;
+        }
+
+        /* === Animations === */
+        .header-content.visible {
+            animation: spookyRise 0.6s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+        }
+
+        .header-content.hiding {
+            animation: spookySink 0.4s ease-in forwards;
+        }
+
+        #eventBox .header-content.visible { animation-delay: 0s; }
+        #heatBox .header-content.visible { animation-delay: 0.1s; }
+        #nameBox .header-content.visible { animation-delay: 0.2s; }
+        #timerBox .header-content.visible { animation-delay: 0.3s; }
+
+        /* Coffin open/close for event name changes */
+        #nameBox .header-content.visible {
+            animation: coffinOpen 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+        }
+
+        #nameBox .header-content.hiding {
+            animation: coffinClose 0.4s ease-in forwards;
+        }
+
+        @keyframes coffinOpen {
+            0% { transform: translateY(0) scaleY(0.1); opacity: 0; }
+            40% { transform: translateY(0) scaleY(1.08); opacity: 0.8; }
+            70% { transform: translateY(0) scaleY(0.97); opacity: 1; }
+            100% { transform: translateY(0) scaleY(1); opacity: 1; }
+        }
+
+        @keyframes coffinClose {
+            0% { transform: translateY(0) scaleY(1); opacity: 1; }
+            100% { transform: translateY(0) scaleY(0.1); opacity: 0; }
+        }
+
+        /* Gravestone rise from the ground */
+        #eventBox .header-content.exploding,
+        #heatBox .header-content.exploding {
+            animation: graveSink 0.3s ease-out forwards !important;
+        }
+
+        #eventBox .header-content.appearing,
+        #heatBox .header-content.appearing {
+            animation: graveRise 0.4s ease-out forwards !important;
+        }
+
+        #eventBox .header-content.appeared,
+        #heatBox .header-content.appeared {
+            animation: none !important;
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+
+        @keyframes graveSink {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(30px) scale(0.8); opacity: 0; }
+        }
+
+        @keyframes graveRise {
+            0% { transform: translateY(40px) scale(0.8); opacity: 0; }
+            60% { transform: translateY(-5px) scale(1.03); opacity: 0.9; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        @keyframes spookyRise {
+            0% { transform: translateY(40px) scale(0.8); opacity: 0; }
+            70% { transform: translateY(-5px) scale(1.02); opacity: 1; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        @keyframes spookySink {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(40px); opacity: 0; }
+        }
+
+        .label {
+            font-size: 0.75rem;
+            color: #aaa;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            margin-right: 0;
+            margin-bottom: 2px;
+            letter-spacing: 2px;
+        }
+
+        .value {
+            font-size: 1.8rem;
+            color: #ddd;
+            text-shadow: 0 0 5px rgba(255,255,255,0.2), 1px 1px 0 #000;
+            letter-spacing: 3px;
+        }
+
+        .event-name {
+            font-size: 1.5rem;
+            color: var(--spooky-yellow);
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5), 2px 2px 0 #000;
+            position: relative;
+            z-index: 1;
+        }
+
+        .event-name-copy {
+            font-size: 1.5rem;
+            color: var(--spooky-yellow);
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5), 2px 2px 0 #000;
+        }
+
+        /* Name box positioning context */
+        #nameBox { position: relative; z-index: 5; }
+        #nameBox .header-content { position: relative; z-index: 5; }
+
+        /* Halloween character runner */
+        .spooky-runner {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            bottom: 5px;
+            left: -70px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .spooky-runner.running {
+            animation: spookyRun 5s linear forwards;
+        }
+
+        @keyframes spookyRun {
+            0% { left: -70px; opacity: 1; }
+            100% { left: calc(100% + 150px); opacity: 1; }
+        }
+
+        /* Ghost floats with bobbing motion */
+        .spooky-runner.ghost.running {
+            animation: spookyRun 5s linear forwards, ghostBob 0.6s ease-in-out infinite;
+        }
+
+        @keyframes ghostBob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        /* Witch flies across */
+        .spooky-runner.witch.running {
+            animation: spookyRun 4s linear forwards, witchFly 0.4s ease-in-out infinite;
+        }
+
+        @keyframes witchFly {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-8px) rotate(5deg); }
+        }
+
+        /* Zombie lurches */
+        .spooky-runner.zombie.running {
+            animation: spookyRun 6s linear forwards, zombieLurch 0.8s ease-in-out infinite;
+        }
+
+        @keyframes zombieLurch {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-3px) rotate(3deg); }
+            75% { transform: translateY(-3px) rotate(-3deg); }
+        }
+
+        /* Mummy shuffles */
+        .spooky-runner.mummy.running {
+            animation: spookyRun 5.5s linear forwards, mummyShuffle 0.3s steps(2) infinite;
+        }
+
+        @keyframes mummyShuffle {
+            0% { transform: translateX(0); }
+            50% { transform: translateX(3px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Placeholder shown until first data received -->
+    <div class="placeholder-container" id="placeholder">
+        <div class="placeholder-box timer header-content visible">
+            <span class="placeholder-text">0:00.0</span>
+        </div>
+        <div class="placeholder-box event header-content visible">
+            <span class="placeholder-text">Waiting...</span>
+        </div>
+        <div class="placeholder-box heat header-content visible">
+            <span class="placeholder-text">Waiting...</span>
+        </div>
+        <div class="placeholder-box name header-content visible">
+            <span class="placeholder-text">Waiting for data...</span>
+        </div>
+    </div>
+
+    <div class="header-container">
+        <div class="header-box fixed" id="eventBox">
+            <div class="header-content" id="eventContent">
+                <span class="label">Event</span>
+                <span class="value" id="eventNumber"></span>
+            </div>
+        </div>
+        <div class="header-box fixed" id="heatBox">
+            <div class="header-content" id="heatContent">
+                <span class="label">Heat</span>
+                <span class="value" id="heatNumber"></span>
+            </div>
+        </div>
+        <div class="header-box stretch" id="nameBox">
+            <div class="header-content" id="nameContent">
+                <div class="event-name-wrapper" id="eventNameWrapper">
+                    <div class="event-name-track" id="eventNameTrack">
+                        <span class="event-name" id="eventName"></span>
+                        <span class="event-name event-name-copy" id="eventNameCopy"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Timer on RIGHT side, embedded in header -->
+        <div class="header-box fixed" id="timerBox">
+            <div class="header-content" id="timerContent">
+                <div class="header-zombie" id="headerZombie">
+                    <svg viewBox="0 0 16 24" width="40" height="60" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated;">
+                        <!-- Head -->
+                        <rect x="4" y="0" width="8" height="2" fill="#3a8a3a"/>
+                        <rect x="3" y="2" width="10" height="1" fill="#3a8a3a"/>
+                        <rect x="2" y="3" width="12" height="1" fill="#4a9a4a"/>
+                        <rect x="2" y="4" width="12" height="1" fill="#4a9a4a"/>
+                        <!-- Eyes -->
+                        <rect x="4" y="4" width="2" height="2" fill="#cccc00"/>
+                        <rect x="9" y="4" width="2" height="2" fill="#cccc00"/>
+                        <!-- Eye detail -->
+                        <rect x="5" y="5" width="1" height="1" fill="#888800"/>
+                        <rect x="10" y="5" width="1" height="1" fill="#888800"/>
+                        <!-- Under eyes -->
+                        <rect x="4" y="6" width="3" height="1" fill="#2244aa"/>
+                        <rect x="9" y="6" width="3" height="1" fill="#2244aa"/>
+                        <!-- Lower face -->
+                        <rect x="2" y="6" width="2" height="2" fill="#4a9a4a"/>
+                        <rect x="12" y="6" width="2" height="2" fill="#4a9a4a"/>
+                        <rect x="4" y="7" width="8" height="1" fill="#3a8a3a"/>
+                        <!-- Mouth -->
+                        <rect x="5" y="7" width="6" height="1" fill="#1a4a1a"/>
+                        <!-- Ear -->
+                        <rect x="1" y="4" width="1" height="3" fill="#3a8a3a"/>
+                        <rect x="14" y="4" width="1" height="3" fill="#3a8a3a"/>
+                        <!-- Neck -->
+                        <rect x="5" y="8" width="6" height="1" fill="#3a8a3a"/>
+                        <!-- Body (dark shirt) -->
+                        <rect x="3" y="9" width="10" height="1" fill="#222"/>
+                        <rect x="2" y="10" width="12" height="5" fill="#222"/>
+                        <!-- Arms -->
+                        <rect x="0" y="10" width="2" height="4" fill="#4a9a4a"/>
+                        <rect x="14" y="10" width="2" height="4" fill="#4a9a4a"/>
+                        <!-- Hands -->
+                        <rect x="0" y="14" width="2" height="1" fill="#3a8a3a"/>
+                        <rect x="14" y="14" width="2" height="1" fill="#3a8a3a"/>
+                        <!-- Shorts -->
+                        <rect x="3" y="15" width="4" height="3" fill="#333"/>
+                        <rect x="9" y="15" width="4" height="3" fill="#333"/>
+                        <!-- Legs -->
+                        <rect x="4" y="18" width="3" height="3" fill="#4a9a4a"/>
+                        <rect x="9" y="18" width="3" height="3" fill="#4a9a4a"/>
+                        <!-- Shoes -->
+                        <rect x="3" y="21" width="4" height="2" fill="#ddd"/>
+                        <rect x="9" y="21" width="4" height="2" fill="#ddd"/>
+                        <rect x="3" y="23" width="5" height="1" fill="#ccc"/>
+                        <rect x="9" y="23" width="5" height="1" fill="#ccc"/>
+                    </svg>
+                </div>
+                <div class="timer-text-group">
+                    <span class="timer-label-header">TIME</span>
+                    <span class="timer-value" id="runningTime"></span>
+                </div>
+            </div>
+        </div>
+        <!-- Halloween character runner -->
+        <div class="spooky-runner" id="spookyRunner">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="64" height="64"></svg>
+        </div>
+    </div>
+
+    <script src="../../js/overlay-core.js"></script>
+    <script src="../../js/header-overlay.js"></script>
+    <script>
+        // === Embedded timer logic for header ===
+        let timerVisible = false;
+        let timerLastScoreboardState = 0;
+        let timerRaceStartTime = 0;
+        const TIMER_FINAL_TIME_GUARD_MS = 10000;
+
+        function processTimerInHeader(jsonData) {
+            const timerContent = document.getElementById('timerContent');
+            const runningTime = document.getElementById('runningTime');
+            const time = jsonData.swimming.RunningTime;
+            const scoreboardState = jsonData.swimming.ScoreboardCurrentState || 0;
+
+            if (scoreboardState === 3 && timerLastScoreboardState !== 3) {
+                timerRaceStartTime = Date.now();
+            }
+            timerLastScoreboardState = scoreboardState;
+
+            const pastGuard = (Date.now() - timerRaceStartTime) >= TIMER_FINAL_TIME_GUARD_MS;
+            const allFinished = pastGuard && SwimOverlay.checkAllActiveFinished(jsonData.swimming.LaneAthleteTeam);
+
+            if (scoreboardState === 3 && !allFinished) {
+                runningTime.textContent = time;
+                if (!timerVisible) {
+                    timerContent.classList.remove('hiding');
+                    timerContent.classList.add('visible');
+                    timerVisible = true;
+                }
+            } else {
+                if (timerVisible) {
+                    timerContent.classList.remove('visible');
+                    timerContent.classList.add('hiding');
+                    timerVisible = false;
+                    setTimeout(() => {
+                        if (!timerVisible) runningTime.textContent = '';
+                    }, 400);
+                }
+            }
+        }
+
+        // Combined data handler — process header + timer
+        function processAllHeaderData(jsonData) {
+            processHeaderData(jsonData);
+            processTimerInHeader(jsonData);
+        }
+
+        // === Halloween character SVGs ===
+        const characters = [
+            {
+                name: 'ghost',
+                svg: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20,58 L20,24 C20,12 32,4 38,4 C50,4 52,16 52,24 L52,58 L46,50 L40,58 L34,50 L28,58 L20,50 Z" fill="white" opacity="0.9"/>
+                    <ellipse cx="30" cy="26" rx="4" ry="5" fill="#1a0a2e"/>
+                    <ellipse cx="42" cy="26" rx="4" ry="5" fill="#1a0a2e"/>
+                    <ellipse cx="36" cy="36" rx="3" ry="4" fill="#1a0a2e"/>
+                </svg>`
+            },
+            {
+                name: 'witch',
+                svg: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="32,2 22,28 42,28" fill="#1a0a2e"/>
+                    <rect x="18" y="26" width="28" height="6" rx="3" fill="#1a0a2e"/>
+                    <circle cx="32" cy="38" r="10" fill="#00cc44"/>
+                    <ellipse cx="28" cy="36" rx="2" ry="2.5" fill="#1a0a2e"/>
+                    <ellipse cx="36" cy="36" rx="2" ry="2.5" fill="#1a0a2e"/>
+                    <path d="M28,42 Q32,46 36,42" stroke="#1a0a2e" fill="none" stroke-width="1.5"/>
+                    <rect x="8" y="50" width="48" height="4" rx="2" fill="#8B4513"/>
+                    <polygon points="4,50 8,48 8,56 4,54" fill="#ffcc00"/>
+                </svg>`
+            },
+            {
+                name: 'zombie',
+                svg: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="22" y="8" width="20" height="24" rx="6" fill="#7ab648"/>
+                    <rect x="20" y="32" width="24" height="24" rx="4" fill="#555"/>
+                    <ellipse cx="28" cy="18" rx="3" ry="3" fill="#1a0a2e"/>
+                    <ellipse cx="36" cy="20" rx="3" ry="2" fill="#1a0a2e"/>
+                    <rect x="27" y="26" width="10" height="3" rx="1" fill="#1a0a2e"/>
+                    <rect x="42" y="20" width="18" height="4" rx="2" fill="#7ab648"/>
+                    <rect x="4" y="18" width="18" height="4" rx="2" fill="#7ab648"/>
+                </svg>`
+            },
+            {
+                name: 'mummy',
+                svg: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="22" y="6" width="20" height="22" rx="8" fill="#e8dcc8"/>
+                    <rect x="20" y="28" width="24" height="30" rx="4" fill="#e8dcc8"/>
+                    <rect x="20" y="10" width="24" height="4" fill="#d4c8a8" opacity="0.7"/>
+                    <rect x="20" y="18" width="24" height="3" fill="#d4c8a8" opacity="0.7"/>
+                    <rect x="18" y="32" width="28" height="4" fill="#d4c8a8" opacity="0.7"/>
+                    <rect x="18" y="42" width="28" height="4" fill="#d4c8a8" opacity="0.7"/>
+                    <ellipse cx="28" cy="16" rx="3" ry="3" fill="#ffcc00"/>
+                    <ellipse cx="28" cy="16" rx="1.5" ry="1.5" fill="#1a0a2e"/>
+                    <ellipse cx="36" cy="16" rx="3" ry="3" fill="#ffcc00"/>
+                    <ellipse cx="36" cy="16" rx="1.5" ry="1.5" fill="#1a0a2e"/>
+                    <path d="M46,34 Q56,30 58,40" stroke="#e8dcc8" fill="none" stroke-width="3"/>
+                </svg>`
+            }
+        ];
+
+        let runnerRunning = false;
+        function triggerSpookyRun() {
+            if (runnerRunning) return;
+            const runner = document.getElementById('spookyRunner');
+            const pick = Math.floor(Math.random() * characters.length);
+            const character = characters[pick];
+
+            runnerRunning = true;
+            runner.className = 'spooky-runner';
+            runner.innerHTML = character.svg;
+
+            void runner.offsetWidth;
+            runner.classList.add(character.name, 'running');
+
+            const duration = character.name === 'witch' ? 4000 :
+                             character.name === 'zombie' ? 6000 :
+                             character.name === 'mummy' ? 5500 : 5000;
+
+            setTimeout(() => {
+                runner.classList.remove('running', character.name);
+                runnerRunning = false;
+            }, duration);
+        }
+
+        // Trigger runner on event changes AND on first event appearance
+        let firstEventSeen = false;
+        SwimOverlay.onEventChange = triggerSpookyRun;
+
+        const _processAllHeaderData = processAllHeaderData;
+        function processAllHeaderDataWithRunner(jsonData) {
+            const eventNum = jsonData.swimming.EventNumber;
+            if (eventNum && !firstEventSeen) {
+                firstEventSeen = true;
+                triggerSpookyRun();
+            }
+            _processAllHeaderData(jsonData);
+        }
+
+        SwimOverlay.init({ onData: processAllHeaderDataWithRunner });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>Scoreboard Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Left Panel - Controls */
+        .controls-panel {
+            width: 400px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            padding: 15px;
+            background: #16213e;
+            border-right: 2px solid #00d4ff;
+        }
+
+        .controls-panel h1 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #00d4ff;
+            text-align: center;
+        }
+
+        /* Right Panel - Iframes */
+        .preview-panel {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            background: #2d2d44;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .preview-panel.visible {
+            display: flex;
+        }
+
+        .iframe-container {
+            position: relative;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .iframe-container.header {
+            height: 100px;
+            flex-shrink: 0;
+        }
+
+        .iframe-container.lanes {
+            flex: 1;
+            min-height: 300px;
+        }
+
+        .iframe-container.timer {
+            height: 80px;
+            flex-shrink: 0;
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .iframe-label {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: rgba(0, 212, 255, 0.8);
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        /* Control Styles */
+        .status {
+            text-align: center;
+            padding: 8px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .status.connected {
+            background: rgba(0, 255, 100, 0.2);
+            color: #00ff64;
+        }
+
+        .status.disconnected {
+            background: rgba(255, 100, 100, 0.2);
+            color: #ff6464;
+        }
+
+        .control-group {
+            background: #0f0f23;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .control-group h3 {
+            margin-bottom: 10px;
+            color: #00d4ff;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 6px;
+            margin-bottom: 8px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 0.85rem;
+        }
+
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary { background: #00d4ff; color: #000; }
+        .btn-success { background: #00ff64; color: #000; }
+        .btn-warning { background: #ffaa00; color: #000; }
+        .btn-danger { background: #ff4444; color: #fff; }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .button-row button {
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .lanes-editor h3 {
+            margin-bottom: 10px;
+            color: #00d4ff;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .lane-row {
+            display: grid;
+            grid-template-columns: 30px 1fr 60px 70px 60px 40px;
+            gap: 5px;
+            margin-bottom: 6px;
+            align-items: center;
+        }
+
+        .lane-row.header {
+            font-weight: bold;
+            color: #00d4ff;
+            font-size: 0.65rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+        }
+
+        .lane-row input {
+            margin-bottom: 0;
+            padding: 4px;
+            font-size: 0.75rem;
+        }
+
+        .lane-number {
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #00d4ff;
+        }
+
+        .json-preview {
+            background: #0f0f23;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.65rem;
+            max-height: 120px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #888;
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: #0f0f23;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .toggle-label {
+            font-size: 0.85rem;
+            color: #eee;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #888;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #00d4ff;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+            background-color: #fff;
+        }
+
+        #raceStatus {
+            margin-top: 8px;
+            color: #ffaa00;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-layout">
+        <!-- Left Panel - Controls -->
+        <div class="controls-panel">
+            <h1>Scoreboard Simulator</h1>
+
+            <div class="status disconnected" id="status">
+                Using BroadcastChannel
+            </div>
+
+            <div class="toggle-container">
+                <span class="toggle-label">Show Preview</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="previewToggle" onchange="togglePreview()" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="control-group">
+                <h3>Theme</h3>
+                <select id="themeSelect" onchange="switchTheme(this.value)">
+                    <option value="mario">Mario</option>
+                    <option value="spooky">Spooky</option>
+                    <option value="default">Default</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <h3>Event Info</h3>
+                <label>Event Number</label>
+                <input type="text" id="eventNumber" value="1">
+                <label>Heat Number</label>
+                <input type="text" id="heatNumber" value="1">
+                <label>Event Name</label>
+                <input type="text" id="eventName" value="100m Freestyle">
+            </div>
+
+            <div class="control-group">
+                <h3>Timer</h3>
+                <label>Running Time</label>
+                <input type="text" id="runningTime" value="  : 0.0 ">
+                <div class="button-row">
+                    <button class="btn-primary" onclick="startTimer()">Start</button>
+                    <button class="btn-warning" onclick="stopTimer()">Stop</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Meet Simulation</h3>
+                <div class="button-row">
+                    <button class="btn-success" onclick="startMeetSimulation()">Run Meet</button>
+                    <button class="btn-danger" onclick="stopMeetSimulation()">Stop Meet</button>
+                </div>
+                <div id="meetStatus" style="margin-top: 8px; color: #00d4ff; font-size: 0.8rem;"></div>
+            </div>
+
+            <div class="control-group">
+                <h3>Data Replay</h3>
+                <label>Upload Log File (.json)</label>
+                <input type="file" id="replayFileInput" accept=".json" onchange="replayLoad()">
+                <div class="button-row">
+                    <button class="btn-success" id="replayPlayBtn" onclick="replayPlay()" disabled>Play</button>
+                    <button class="btn-danger" id="replayStopBtn" onclick="replayStop()" disabled>Stop</button>
+                </div>
+                <div id="replayCueControls" style="display: none; margin-top: 8px;">
+                    <label>Cue Position</label>
+                    <input type="range" id="replayScrubber" min="0" max="0" value="0"
+                        oninput="replayScrubberChanged()" style="margin-bottom: 4px; cursor: pointer;">
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="number" id="replayCueInput" min="1" max="1" value="1"
+                            style="width: 80px; flex: none;" onchange="replayCueInputChanged()">
+                        <span id="replayCueInfo" style="color: #aaa; font-size: 0.75rem; flex: 1;"></span>
+                        <button class="btn-warning" id="replayCueBtn" onclick="replayCue()">Cue</button>
+                    </div>
+                </div>
+                <div id="replayStatus" style="margin-top: 8px; color: #00d4ff; font-size: 0.8rem;"></div>
+            </div>
+
+            <div class="control-group lanes-editor">
+                <h3>Lane Data</h3>
+                <div class="lane-row header">
+                    <div>Ln</div>
+                    <div>Athlete</div>
+                    <div>Team</div>
+                    <div>Final</div>
+                    <div>Split</div>
+                    <div>Pl</div>
+                </div>
+                <div id="lanesContainer"></div>
+                <div class="button-row" style="margin-top: 10px;">
+                    <button class="btn-warning" onclick="clearAllTimes()">Clear Times</button>
+                </div>
+            </div>
+
+            <div class="json-preview" id="jsonPreview">JSON preview...</div>
+        </div>
+
+        <!-- Right Panel - Preview Iframes -->
+        <div class="preview-panel">
+            <div class="iframe-container header">
+                <span class="iframe-label">HEADER</span>
+                <iframe id="headerFrame" data-src="themes/mario/HeaderOverlay.html"></iframe>
+            </div>
+            <div class="iframe-container lanes">
+                <span class="iframe-label">LANES</span>
+                <iframe id="lanesFrame" data-src="themes/mario/LaneOverlay.html"></iframe>
+            </div>
+            <div class="iframe-container timer">
+                <span class="iframe-label">TIMER</span>
+                <iframe id="timerFrame" data-src="themes/mario/TimerOverlay.html"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script src="LogCompressor.js"></script>
+    <script>
+        const NUM_LANES = 8;
+        let timerInterval = null;
+        let timerSeconds = 0;
+        let continuousInterval = null;
+
+        // BroadcastChannel for tab-to-tab communication
+        const channel = new BroadcastChannel('swimnerd-scoreboard');
+
+        // Also try WebSocket connection
+        let wsClient = null;
+        function connectWebSocket() {
+            try {
+                wsClient = new WebSocket("ws://localhost:8080/");
+                wsClient.onopen = () => {
+                    document.getElementById('status').textContent = 'Connected to WebSocket (port 8080)';
+                    document.getElementById('status').className = 'status connected';
+                };
+                wsClient.onclose = () => {
+                    document.getElementById('status').textContent = 'WebSocket disconnected - retrying...';
+                    document.getElementById('status').className = 'status disconnected';
+                    wsClient = null;
+                    setTimeout(connectWebSocket, 3000);
+                };
+                wsClient.onerror = () => {
+                    wsClient = null;
+                };
+            } catch (e) {
+                console.log('WebSocket not available, using BroadcastChannel only');
+                setTimeout(connectWebSocket, 3000);
+            }
+        }
+        connectWebSocket();
+
+        // Sample swimmer names (80+ for full meet simulation)
+        const sampleNames = [
+            "Michael Phelps", "Katie Ledecky", "Caeleb Dressel", "Simone Manuel",
+            "Ryan Lochte", "Missy Franklin", "Nathan Adrian", "Natalie Coughlin",
+            "Adam Peaty", "Sarah Sjostrom", "Chad le Clos", "Penny Oleksiak",
+            "Sun Yang", "Federica Pellegrini", "Cameron McEvoy", "Ranomi Kromowidjojo",
+            "Florent Manaudou", "Cate Campbell", "Kyle Chalmers", "Emma McKeon",
+            "Kosuke Hagino", "Katinka Hosszu", "Tom Shields", "Siobhan Haughey",
+            "Kristof Milak", "Ariarne Titmus", "Leon Marchand", "Summer McIntosh",
+            "David Popovici", "Mollie O'Callaghan", "Pan Zhanle", "Kaylee McKeown",
+            "Thomas Ceccon", "Regan Smith", "Noe Ponti", "Kate Douglass",
+            "Josh Liendo", "Torri Huske", "Matt Richards", "Alex Walsh",
+            "Duncan Scott", "Taylor Ruck", "Hwang Sun-woo", "Lilly King",
+            "Ahmed Hafnaoui", "Annie Lazor", "Brooks Curry", "Phoebe Bacon",
+            "Jack Alexy", "Claire Curzan", "Hunter Armstrong", "Gretchen Walsh",
+            "Nic Fink", "Katharine Berkoff", "Carson Foster", "Leah Smith",
+            "Shaine Casas", "Erika Brown", "Ryan Murphy", "Lydia Jacoby",
+            "Bobby Finke", "Katie Grimes", "Kieran Smith", "Paige Madden",
+            "Trenton Julian", "Bella Sims", "Luke Hobson", "Erin Gemmell",
+            "Chris Guiliano", "Alex Shackell", "Daniel Diehl", "Lillie Nordmann",
+            "Jake Mitchell", "Anna Peplowski", "Aaron Shackell", "Addison Sauickie",
+            "Luca Urlando", "Lindsay Looney", "Gabriel Jett", "Emma Weber"
+        ];
+
+        const sampleTeams = ["USA", "AUS", "GBR", "CAN", "GER", "SWE", "RSA", "JPN", "HUN", "ITA", "FRA", "CHN", "ROU", "NED", "BRA", "KOR"];
+
+        // Event names for meet simulation
+        const eventNames = [
+            "100m Freestyle",
+            "200m Backstroke",
+            "100m Breaststroke",
+            "200m Butterfly",
+            "400m Individual Medley"
+        ];
+
+        // Initialize lane editor
+        function initLanes() {
+            const container = document.getElementById('lanesContainer');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= NUM_LANES; i++) {
+                const row = document.createElement('div');
+                row.className = 'lane-row';
+                row.innerHTML = `
+                    <div class="lane-number">${i}</div>
+                    <input type="text" id="name-${i}" placeholder="Name">
+                    <input type="text" id="team-${i}" placeholder="Team">
+                    <input type="text" id="finalTime-${i}" placeholder="0:00.00">
+                    <input type="text" id="splitTime-${i}" placeholder="" value="">
+                    <input type="text" id="place-${i}" placeholder=" " value=" ">
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        // Build JSON data from form
+        function buildJsonData() {
+            const lanes = [];
+            for (let i = 1; i <= NUM_LANES; i++) {
+                const name = document.getElementById(`name-${i}`).value;
+                const hasData = name.trim() !== '';
+
+                // Split name into first/last for the new fields
+                const nameParts = name.trim().split(/\s+/);
+                const firstname = nameParts.length > 0 ? nameParts[0] : '';
+                const lastname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+                lanes.push({
+                    LaneID: i,
+                    LaneNumber: hasData ? String(i) : " ",
+                    AthleteName: name,
+                    Team: document.getElementById(`team-${i}`).value,
+                    SplitTime: document.getElementById(`splitTime-${i}`).value,
+                    FinalTime: document.getElementById(`finalTime-${i}`).value,
+                    Place: document.getElementById(`place-${i}`).value || " ",
+                    Firstname: firstname,
+                    Middlename: "",
+                    Lastname: lastname,
+                    NameFormatDisplayAs: 9,
+                    NameCaseDisplayAs: 0
+                });
+            }
+
+            const eventNumber = parseInt(document.getElementById('eventNumber').value) || 0;
+            const heatNumber = parseInt(document.getElementById('heatNumber').value) || 0;
+            const eventName = document.getElementById('eventName').value;
+
+            return {
+                dbLiveScoreboardEvent: null,
+                swimming: {
+                    TimeOfDay: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+                    EventName: eventName,
+                    EventRecord: "",
+                    EventNumber: eventNumber,
+                    HeatNumber: heatNumber,
+                    Lengths: 4,
+                    RunningTime: document.getElementById('runningTime').value,
+                    HomeScore: 0,
+                    Guest1Score: 0,
+                    Guest2Score: 0,
+                    Guest3Score: 0,
+                    Mod15: "",
+                    ScoreboardCurrentState: raceSimulationRunning ? 3 : 2,
+                    ExportLiveResults: false,
+                    TimeStandard1: "",
+                    TimeStandard2: "",
+                    TimeStandard3: "",
+                    EventHeatName: `Event: ${eventNumber} Heat: ${heatNumber} - ${eventName}`,
+                    EventNumberName: `${eventNumber}: ${eventName}`,
+                    LaneAthleteTeam: lanes
+                }
+            };
+        }
+
+        // Send data to overlay
+        function sendData() {
+            const data = buildJsonData();
+            const jsonStr = JSON.stringify(data, null, 2);
+            document.getElementById('jsonPreview').textContent = jsonStr;
+
+            // Send via BroadcastChannel
+            channel.postMessage(data);
+
+            // Also send via WebSocket if connected
+            if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+                wsClient.send(JSON.stringify(data));
+            }
+        }
+
+        let autoSending = false;
+        function sendDataContinuous() {
+            if (continuousInterval) return;
+            autoSending = true;
+            sendData();
+            continuousInterval = setInterval(sendData, 1000);
+        }
+
+        function stopContinuous() {
+            if (continuousInterval) {
+                clearInterval(continuousInterval);
+                continuousInterval = null;
+            }
+            autoSending = false;
+        }
+
+        // Time formatting to match real scoreboard output
+        function formatRunningTime(totalSeconds) {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = (totalSeconds % 60).toFixed(1).padStart(4, '0');
+            if (mins > 0) {
+                return ` ${mins}:${secs} `;
+            }
+            return `  :${secs} `;
+        }
+
+        function formatFinalTime(totalSeconds) {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = (totalSeconds % 60).toFixed(2).padStart(5, '0');
+            if (mins > 0) {
+                return ` ${mins}:${secs}`;
+            }
+            return `  :${secs}`;
+        }
+
+        // Timer functions
+        function startTimer() {
+            if (timerInterval) return;
+            timerSeconds = 0;
+            timerInterval = setInterval(() => {
+                timerSeconds += 0.1;
+                const formatted = formatRunningTime(timerSeconds);
+                document.getElementById('runningTime').value = formatted;
+
+                // During race simulation, mirror running time to active lanes' FinalTime
+                if (raceSimulationRunning) {
+                    for (let i = 1; i <= NUM_LANES; i++) {
+                        const place = document.getElementById(`place-${i}`).value;
+                        const hasName = document.getElementById(`name-${i}`).value.trim() !== '';
+                        const hasPlace = place && place.trim() !== '' && place.trim() !== ' ';
+                        if (hasName && !hasPlace) {
+                            document.getElementById(`finalTime-${i}`).value = formatted;
+                        }
+                    }
+                }
+
+                sendData(); // Always send when timer changes
+            }, 100);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('runningTime').value = "  : 0.0 ";
+        }
+
+        // Presets
+        function loadPreset(preset) {
+            switch (preset) {
+                case 'empty':
+                    for (let i = 1; i <= NUM_LANES; i++) {
+                        document.getElementById(`name-${i}`).value = '';
+                        document.getElementById(`team-${i}`).value = '';
+                        document.getElementById(`finalTime-${i}`).value = '';
+                        document.getElementById(`splitTime-${i}`).value = '';
+                        document.getElementById(`place-${i}`).value = ' ';
+                    }
+                    break;
+
+                case 'fullRace':
+                    const times = generateRaceTimes();
+                    const shuffledNames = [...sampleNames].sort(() => Math.random() - 0.5);
+                    const shuffledTeams = [...sampleTeams].sort(() => Math.random() - 0.5);
+
+                    for (let i = 1; i <= NUM_LANES; i++) {
+                        document.getElementById(`name-${i}`).value = shuffledNames[i - 1] || `Swimmer ${i}`;
+                        document.getElementById(`team-${i}`).value = shuffledTeams[(i - 1) % sampleTeams.length];
+                        document.getElementById(`finalTime-${i}`).value = times[i - 1].time;
+                        document.getElementById(`splitTime-${i}`).value = times[i - 1].split;
+                        document.getElementById(`place-${i}`).value = times[i - 1].place;
+                    }
+                    break;
+
+                case 'partial':
+                    loadPreset('fullRace');
+                    // Clear some lanes
+                    for (let i = 5; i <= NUM_LANES; i++) {
+                        document.getElementById(`finalTime-${i}`).value = '';
+                        document.getElementById(`place-${i}`).value = ' ';
+                    }
+                    break;
+
+                case 'randomize':
+                    const newTimes = generateRaceTimes();
+                    for (let i = 1; i <= NUM_LANES; i++) {
+                        if (document.getElementById(`name-${i}`).value) {
+                            document.getElementById(`finalTime-${i}`).value = newTimes[i - 1].time;
+                            document.getElementById(`splitTime-${i}`).value = newTimes[i - 1].split;
+                            document.getElementById(`place-${i}`).value = newTimes[i - 1].place;
+                        }
+                    }
+                    break;
+            }
+            sendData();
+        }
+
+        function generateRaceTimes() {
+            const basetime = 50 + Math.random() * 20; // 50-70 seconds
+            const times = [];
+
+            for (let i = 0; i < NUM_LANES; i++) {
+                const variance = Math.random() * 8; // 0-8 seconds variance
+                const totalSeconds = basetime + variance;
+                const splitSeconds = totalSeconds * 0.48 + Math.random() * 2;
+                const splitSecs = splitSeconds.toFixed(2);
+
+                times.push({
+                    time: formatFinalTime(totalSeconds),
+                    split: splitSecs,
+                    totalSeconds: totalSeconds
+                });
+            }
+
+            // Sort by time and assign places
+            times.sort((a, b) => a.totalSeconds - b.totalSeconds);
+            times.forEach((t, idx) => t.place = String(idx + 1));
+
+            // Shuffle back to lane order but keep places
+            const result = [];
+            const shuffled = [...times].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < NUM_LANES; i++) {
+                result.push(shuffled[i]);
+            }
+
+            return result;
+        }
+
+        function clearAllTimes() {
+            for (let i = 1; i <= NUM_LANES; i++) {
+                document.getElementById(`finalTime-${i}`).value = '';
+                document.getElementById(`splitTime-${i}`).value = '';
+                document.getElementById(`place-${i}`).value = ' ';
+            }
+            sendData();
+        }
+
+        // Race Simulation
+        let raceSimulationRunning = false;
+        let raceTimeouts = [];
+        let laneSplitTimes = [];
+        let laneFinalTimes = [];
+
+        function startRaceSimulation() {
+            if (raceSimulationRunning) return;
+            raceSimulationRunning = true;
+
+            // Clear any existing timeouts
+            raceTimeouts.forEach(t => clearTimeout(t));
+            raceTimeouts = [];
+
+            // Setup swimmers
+            const shuffledNames = [...sampleNames].sort(() => Math.random() - 0.5);
+            const shuffledTeams = [...sampleTeams].sort(() => Math.random() - 0.5);
+
+            // Initialize lane data
+            laneSplitTimes = [];
+            laneFinalTimes = [];
+
+            for (let i = 1; i <= NUM_LANES; i++) {
+                document.getElementById(`name-${i}`).value = shuffledNames[i - 1] || `Swimmer ${i}`;
+                document.getElementById(`team-${i}`).value = shuffledTeams[(i - 1) % sampleTeams.length];
+                document.getElementById(`finalTime-${i}`).value = '';
+                document.getElementById(`splitTime-${i}`).value = '';
+                document.getElementById(`place-${i}`).value = ' ';
+
+                // Generate random lap times for this lane (1 split before final)
+                const baseLapTime = 13 + Math.random() * 2;
+                const splitDeltas = [];
+                const splitCumulative = [];
+                let cumulative = 0;
+
+                // First half of race (split)
+                const splitLap = baseLapTime + (Math.random() - 0.5) * 2;
+                cumulative += splitLap;
+                splitDeltas.push(splitLap);
+                splitCumulative.push(cumulative);
+
+                // Second half of race (to final)
+                const finalLap = baseLapTime + 3 + Math.random() * 4;
+                cumulative += finalLap;
+                laneSplitTimes.push({ deltas: splitDeltas, cumulative: splitCumulative });
+                laneFinalTimes.push(cumulative);
+            }
+
+            // Clear and start timer
+            stopTimer();
+            clearAllTimes();
+
+            // Set SplitTime to "." for active lanes (race starting)
+            for (let i = 1; i <= NUM_LANES; i++) {
+                if (document.getElementById(`name-${i}`).value.trim() !== '') {
+                    document.getElementById(`splitTime-${i}`).value = '.';
+                }
+            }
+
+            startTimer();
+            sendDataContinuous();
+
+            updateRaceStatus('Race started...');
+
+            // Schedule splits for each lane
+            for (let lane = 1; lane <= NUM_LANES; lane++) {
+                const { deltas, cumulative } = laneSplitTimes[lane - 1];
+                const finalTime = laneFinalTimes[lane - 1];
+                const splitValue = deltas[0].toFixed(2);
+
+                // Single split
+                const tSplit = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`splitTime-${lane}`).value = splitValue;
+                    updateRaceStatus(`Split: Lane ${lane}`);
+                }, cumulative[0] * 1000);
+                raceTimeouts.push(tSplit);
+
+                const tClear = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`splitTime-${lane}`).value = '.';
+                }, (cumulative[0] + 1.5) * 1000);
+                raceTimeouts.push(tClear);
+
+                // Final time
+                const tFinal = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`finalTime-${lane}`).value = formatFinalTime(finalTime);
+                    document.getElementById(`splitTime-${lane}`).value = splitValue;
+                    updatePlaces();
+                    updateRaceStatus(`Finish: Lane ${lane}`);
+                }, finalTime * 1000);
+                raceTimeouts.push(tFinal);
+            }
+
+            // End race - stop timer when last swimmer finishes
+            const maxTime = Math.max(...laneFinalTimes);
+            const tEnd = setTimeout(() => {
+                if (!raceSimulationRunning) return;
+                updateRaceStatus('Race complete!');
+                stopTimerKeepTime();
+                raceSimulationRunning = false;
+            }, maxTime * 1000);
+            raceTimeouts.push(tEnd);
+        }
+
+        function stopTimerKeepTime() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            // Don't reset the time display - keep showing final time
+        }
+
+        function stopRaceSimulation() {
+            raceSimulationRunning = false;
+            raceTimeouts.forEach(t => clearTimeout(t));
+            raceTimeouts = [];
+            stopTimer();
+            stopContinuous();
+            updateRaceStatus('Stopped');
+        }
+
+        function updatePlaces() {
+            const finishers = [];
+            for (let i = 1; i <= NUM_LANES; i++) {
+                if (!document.getElementById(`name-${i}`).value) continue;
+                const finalTimeStr = document.getElementById(`finalTime-${i}`).value;
+                // Only count real final times (2 decimal places), not running time (1 decimal)
+                if (finalTimeStr && /\.\d{2}\s*$/.test(finalTimeStr.trim())) {
+                    const parts = finalTimeStr.trim().split(':');
+                    const mins = parseInt(parts[0]) || 0;
+                    const secs = parseFloat(parts[1]) || 0;
+                    const totalSecs = mins * 60 + secs;
+                    finishers.push({ lane: i, time: totalSecs });
+                }
+            }
+
+            finishers.sort((a, b) => a.time - b.time);
+            finishers.forEach((f, idx) => {
+                document.getElementById(`place-${f.lane}`).value = String(idx + 1);
+            });
+        }
+
+        function updateRaceStatus(message) {
+            document.getElementById('raceStatus').textContent = message;
+        }
+
+        // Meet Simulation
+        let meetSimulationRunning = false;
+        let currentEventIndex = 0;
+        let currentHeatIndex = 0;
+        let meetSwimmerPool = [];
+        const HEATS_PER_EVENT = 2;
+        const TOTAL_EVENTS = 5;
+        const LINEUP_DISPLAY_TIME = 5000; // 5 seconds to show lineup before race
+        const POST_RACE_DISPLAY_TIME = 8000; // 8 seconds to show results after race
+
+        function startMeetSimulation() {
+            if (meetSimulationRunning) return;
+            meetSimulationRunning = true;
+            currentEventIndex = 0;
+            currentHeatIndex = 0;
+
+            // Shuffle all swimmers for the meet
+            meetSwimmerPool = [...sampleNames].sort(() => Math.random() - 0.5);
+
+            updateMeetStatus(`Starting meet: ${TOTAL_EVENTS} events, ${HEATS_PER_EVENT} heats each`);
+            runNextHeat();
+        }
+
+        function stopMeetSimulation() {
+            meetSimulationRunning = false;
+            stopRaceSimulation();
+            updateMeetStatus('Meet stopped');
+        }
+
+        function runNextHeat() {
+            if (!meetSimulationRunning) return;
+
+            // Check if meet is complete
+            if (currentEventIndex >= TOTAL_EVENTS) {
+                meetSimulationRunning = false;
+                updateMeetStatus('Meet complete!');
+                return;
+            }
+
+            const eventNum = currentEventIndex + 1;
+            const heatNum = currentHeatIndex + 1;
+            const eventName = eventNames[currentEventIndex];
+
+            // Update event info
+            document.getElementById('eventNumber').value = eventNum;
+            document.getElementById('heatNumber').value = heatNum;
+            document.getElementById('eventName').value = eventName;
+
+            // Heat 1 leaves lanes 1 and 8 empty; Heat 2 fills all lanes
+            const emptyLanes = (currentHeatIndex === 0) ? [1, 8] : [];
+            const activeLaneCount = NUM_LANES - emptyLanes.length;
+
+            // Get swimmers for this heat
+            const heatStartIndex = (currentEventIndex * HEATS_PER_EVENT + currentHeatIndex) * NUM_LANES;
+            const heatSwimmers = meetSwimmerPool.slice(heatStartIndex, heatStartIndex + activeLaneCount);
+
+            // If we don't have enough swimmers, wrap around
+            while (heatSwimmers.length < activeLaneCount) {
+                const wrapIndex = heatSwimmers.length % meetSwimmerPool.length;
+                heatSwimmers.push(meetSwimmerPool[wrapIndex]);
+            }
+
+            // Assign random teams
+            const shuffledTeams = [...sampleTeams].sort(() => Math.random() - 0.5);
+
+            // Clear times and set up lineup
+            let swimmerIdx = 0;
+            for (let i = 1; i <= NUM_LANES; i++) {
+                if (emptyLanes.includes(i)) {
+                    document.getElementById(`name-${i}`).value = '';
+                    document.getElementById(`team-${i}`).value = '';
+                } else {
+                    document.getElementById(`name-${i}`).value = heatSwimmers[swimmerIdx] || `Swimmer ${i}`;
+                    document.getElementById(`team-${i}`).value = shuffledTeams[swimmerIdx % sampleTeams.length];
+                    swimmerIdx++;
+                }
+                document.getElementById(`finalTime-${i}`).value = '';
+                document.getElementById(`splitTime-${i}`).value = '';
+                document.getElementById(`place-${i}`).value = ' ';
+            }
+
+            updateMeetStatus(`Event ${eventNum}: ${eventName} - Heat ${heatNum} (Lineup)`);
+
+            // Send lineup data
+            sendData();
+
+            // Wait for lineup display, then start race
+            setTimeout(() => {
+                if (!meetSimulationRunning) return;
+                updateMeetStatus(`Event ${eventNum}: ${eventName} - Heat ${heatNum} (Racing)`);
+                startHeatRace();
+            }, LINEUP_DISPLAY_TIME);
+        }
+
+        function startHeatRace() {
+            if (!meetSimulationRunning) return;
+
+            // Similar to startRaceSimulation but calls onHeatComplete when done
+            raceSimulationRunning = true;
+            raceTimeouts.forEach(t => clearTimeout(t));
+            raceTimeouts = [];
+
+            laneSplitTimes = [];
+            laneFinalTimes = [];
+
+            for (let i = 1; i <= NUM_LANES; i++) {
+                document.getElementById(`finalTime-${i}`).value = '';
+                document.getElementById(`splitTime-${i}`).value = document.getElementById(`name-${i}`).value ? '.' : '';
+                document.getElementById(`place-${i}`).value = ' ';
+
+                // Skip time generation for empty lanes
+                if (!document.getElementById(`name-${i}`).value) {
+                    laneSplitTimes.push(null);
+                    laneFinalTimes.push(Infinity);
+                    continue;
+                }
+
+                const baseLapTime = 13 + Math.random() * 2;
+                const splitDeltas = [];
+                const splitCumulative = [];
+                let cumulative = 0;
+
+                const splitLap = baseLapTime + (Math.random() - 0.5) * 2;
+                cumulative += splitLap;
+                splitDeltas.push(splitLap);
+                splitCumulative.push(cumulative);
+
+                const finalLap = baseLapTime + 3 + Math.random() * 4;
+                cumulative += finalLap;
+                laneSplitTimes.push({ deltas: splitDeltas, cumulative: splitCumulative });
+                laneFinalTimes.push(cumulative);
+            }
+
+            stopTimer();
+            startTimer();
+            sendDataContinuous();
+
+            for (let lane = 1; lane <= NUM_LANES; lane++) {
+                if (!laneSplitTimes[lane - 1]) continue;
+                const { deltas, cumulative } = laneSplitTimes[lane - 1];
+                const finalTime = laneFinalTimes[lane - 1];
+                const splitValue = deltas[0].toFixed(2);
+
+                const tSplit = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`splitTime-${lane}`).value = splitValue;
+                }, cumulative[0] * 1000);
+                raceTimeouts.push(tSplit);
+
+                const tClear = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`splitTime-${lane}`).value = '.';
+                }, (cumulative[0] + 1.5) * 1000);
+                raceTimeouts.push(tClear);
+
+                const tFinal = setTimeout(() => {
+                    if (!raceSimulationRunning) return;
+                    document.getElementById(`finalTime-${lane}`).value = formatFinalTime(finalTime);
+                    document.getElementById(`splitTime-${lane}`).value = splitValue;
+                    updatePlaces();
+                }, finalTime * 1000);
+                raceTimeouts.push(tFinal);
+            }
+
+            const activeFinalTimes = laneFinalTimes.filter(t => t !== Infinity);
+            const maxTime = Math.max(...activeFinalTimes);
+            const tEnd = setTimeout(() => {
+                if (!raceSimulationRunning) return;
+                stopTimerKeepTime();
+                raceSimulationRunning = false;
+                onHeatComplete();
+            }, maxTime * 1000);
+            raceTimeouts.push(tEnd);
+        }
+
+        function onHeatComplete() {
+            if (!meetSimulationRunning) return;
+
+            const eventNum = currentEventIndex + 1;
+            const heatNum = currentHeatIndex + 1;
+            updateMeetStatus(`Event ${eventNum}: ${eventNames[currentEventIndex]} - Heat ${heatNum} (Results)`);
+
+            // Move to next heat or event
+            currentHeatIndex++;
+            if (currentHeatIndex >= HEATS_PER_EVENT) {
+                currentHeatIndex = 0;
+                currentEventIndex++;
+            }
+
+            // Wait to display results, then run next heat
+            setTimeout(() => {
+                if (!meetSimulationRunning) return;
+                runNextHeat();
+            }, POST_RACE_DISPLAY_TIME);
+        }
+
+        function updateMeetStatus(message) {
+            document.getElementById('meetStatus').textContent = message;
+        }
+
+        // Switch theme
+        function switchTheme(themeName) {
+            const previewToggle = document.getElementById('previewToggle');
+            const iframes = [
+                { el: document.getElementById('headerFrame'), file: 'HeaderOverlay.html' },
+                { el: document.getElementById('lanesFrame'), file: 'LaneOverlay.html' },
+                { el: document.getElementById('timerFrame'), file: 'TimerOverlay.html' }
+            ];
+
+            iframes.forEach(({ el, file }) => {
+                const newSrc = `themes/${themeName}/${file}`;
+                el.dataset.src = newSrc;
+                if (previewToggle.checked) {
+                    el.src = newSrc;
+                }
+            });
+
+            // Re-send data after a short delay so new iframes receive it
+            setTimeout(() => sendData(), 500);
+        }
+
+        // Toggle preview panel
+        function togglePreview() {
+            const previewPanel = document.querySelector('.preview-panel');
+            const toggle = document.getElementById('previewToggle');
+            const iframes = document.querySelectorAll('.preview-panel iframe');
+
+            if (toggle.checked) {
+                // Load iframes by setting src from data-src
+                iframes.forEach(iframe => {
+                    if (!iframe.src || iframe.src === 'about:blank') {
+                        iframe.src = iframe.dataset.src;
+                    }
+                });
+                previewPanel.classList.add('visible');
+            } else {
+                // Unload iframes to stop scripts
+                iframes.forEach(iframe => {
+                    iframe.src = 'about:blank';
+                });
+                previewPanel.classList.remove('visible');
+            }
+        }
+
+        // Initialize
+        initLanes();
+        loadPreset('fullRace');
+        clearAllTimes(); // Start with times reset
+        togglePreview(); // Load preview iframes by default
+
+        // Send initial data after a short delay to ensure iframes are loaded
+        setTimeout(() => sendData(), 500);
+
+        // Data Replay
+        let replayEntries = [];
+        let replayTimeouts = [];
+        let replayIndex = 0;
+        let replayRunning = false;
+
+        function replayLoad() {
+            const fileInput = document.getElementById('replayFileInput');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            document.getElementById('replayStatus').textContent = 'Loading...';
+            document.getElementById('replayPlayBtn').disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var parsed = JSON.parse(e.target.result);
+                    if (parsed.version && parsed.baseline) {
+                        replayEntries = LogCompressor.decompress(parsed);
+                    } else {
+                        replayEntries = parsed;
+                    }
+                    replayIndex = 0;
+                    document.getElementById('replayStatus').textContent = `Loaded ${replayEntries.length} entries from ${file.name}`;
+                    document.getElementById('replayPlayBtn').disabled = false;
+
+                    // Show cue controls and set bounds
+                    const cueControls = document.getElementById('replayCueControls');
+                    const scrubber = document.getElementById('replayScrubber');
+                    const cueInput = document.getElementById('replayCueInput');
+                    cueControls.style.display = '';
+                    scrubber.max = replayEntries.length - 1;
+                    scrubber.value = 0;
+                    cueInput.max = replayEntries.length;
+                    cueInput.value = 1;
+                    updateCueInfo(0);
+                } catch (err) {
+                    document.getElementById('replayStatus').textContent = 'Parse error: ' + err.message;
+                }
+            };
+            reader.onerror = function() {
+                document.getElementById('replayStatus').textContent = 'Read error: could not read file';
+            };
+            reader.readAsText(file);
+        }
+
+        function updateCueInfo(index) {
+            const entry = replayEntries[index];
+            if (!entry) return;
+            const t = entry.t.toFixed(1);
+            const ev = entry.data.swimming.EventNumber || '?';
+            const ht = entry.data.swimming.HeatNumber || '?';
+            const rt = (entry.data.swimming.RunningTime || '').trim();
+            document.getElementById('replayCueInfo').textContent =
+                `t=${t}s | Ev${ev} Ht${ht} | ${rt}`;
+        }
+
+        function replayScrubberChanged() {
+            const index = parseInt(document.getElementById('replayScrubber').value);
+            document.getElementById('replayCueInput').value = index + 1;
+            updateCueInfo(index);
+        }
+
+        function replayCueInputChanged() {
+            const val = parseInt(document.getElementById('replayCueInput').value);
+            const index = Math.max(0, Math.min(replayEntries.length - 1, val - 1));
+            document.getElementById('replayScrubber').value = index;
+            document.getElementById('replayCueInput').value = index + 1;
+            updateCueInfo(index);
+        }
+
+        function replayCue() {
+            if (replayRunning || replayEntries.length === 0) return;
+            const index = parseInt(document.getElementById('replayScrubber').value);
+            const entry = replayEntries[index];
+            if (!entry) return;
+
+            // Send this single frame to overlays
+            channel.postMessage(entry.data);
+            if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+                wsClient.send(JSON.stringify(entry.data));
+            }
+            document.getElementById('jsonPreview').textContent = JSON.stringify(entry.data, null, 2);
+            document.getElementById('replayStatus').textContent =
+                `Cued to entry ${index + 1} / ${replayEntries.length}`;
+        }
+
+        function replayPlay() {
+            if (replayRunning || replayEntries.length === 0) return;
+            replayRunning = true;
+            document.getElementById('replayPlayBtn').disabled = true;
+            document.getElementById('replayStopBtn').disabled = false;
+
+            // Disable sim buttons during replay
+            document.querySelectorAll('.control-group button').forEach(btn => {
+                if (!['replayStopBtn'].includes(btn.id)) btn.classList.add('replay-disabled');
+            });
+
+            // Start from the cue position
+            replayIndex = parseInt(document.getElementById('replayScrubber').value) || 0;
+            scheduleReplayEntry();
+        }
+
+        function scheduleReplayEntry() {
+            if (!replayRunning || replayIndex >= replayEntries.length) {
+                replayFinish();
+                return;
+            }
+            const entry = replayEntries[replayIndex];
+            const delay = replayIndex === 0 ? 0 :
+                (replayEntries[replayIndex].t - replayEntries[replayIndex - 1].t) * 1000;
+
+            const tid = setTimeout(() => {
+                if (!replayRunning) return;
+                // Send via BroadcastChannel
+                channel.postMessage(entry.data);
+                // Send via WebSocket
+                if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+                    wsClient.send(JSON.stringify(entry.data));
+                }
+                document.getElementById('replayStatus').textContent =
+                    `Entry ${replayIndex + 1} / ${replayEntries.length}`;
+                document.getElementById('replayScrubber').value = replayIndex;
+                document.getElementById('replayCueInput').value = replayIndex + 1;
+                updateCueInfo(replayIndex);
+                document.getElementById('jsonPreview').textContent = JSON.stringify(entry.data, null, 2);
+                replayIndex++;
+                scheduleReplayEntry();
+            }, Math.max(0, delay));
+            replayTimeouts.push(tid);
+        }
+
+        function replayFinish() {
+            replayRunning = false;
+            document.getElementById('replayPlayBtn').disabled = false;
+            document.getElementById('replayStopBtn').disabled = true;
+            document.querySelectorAll('.replay-disabled').forEach(btn => btn.classList.remove('replay-disabled'));
+            if (replayIndex >= replayEntries.length) {
+                document.getElementById('replayStatus').textContent =
+                    `Done — ${replayEntries.length} entries played`;
+            }
+        }
+
+        function replayStop() {
+            replayRunning = false;
+            replayTimeouts.forEach(t => clearTimeout(t));
+            replayTimeouts = [];
+            document.getElementById('replayStatus').textContent = 'Stopped at entry ' + replayIndex;
+            replayFinish();
+        }
+
+        // Send data when Enter is pressed in any input field
+        document.querySelector('.controls-panel').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                e.preventDefault();
+                sendData();
+            }
+        });
+    </script>
+</body>
+</html>

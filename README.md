@@ -4,10 +4,10 @@ A streaming overlay system for competitive swimming meets. Displays real-time ra
 
 ## Live Pages
 
-- [Full Simulator Test Output](https://lgbeno.github.io/swimnerd-templates/Templates/Simulator.html)
-- [Title Header Template](https://lgbeno.github.io/swimnerd-templates/Templates/HeaderOverlay.html)
-- [Lane Text Template](https://lgbeno.github.io/swimnerd-templates/Templates/LaneOverlay.html)
-- [Timer Template](https://lgbeno.github.io/swimnerd-templates/Templates/TimerOverlay.html)
+- [Full Simulator Test Output](https://lgbeno.github.io/swimnerd-templates/Simulator.html)
+- [Title Header Template](https://lgbeno.github.io/swimnerd-templates/themes/default/HeaderOverlay.html)
+- [Lane Text Template](https://lgbeno.github.io/swimnerd-templates/themes/default/LaneOverlay.html)
+- [Timer Template](https://lgbeno.github.io/swimnerd-templates/themes/default/TimerOverlay.html)
 - [Data Logger](https://lgbeno.github.io/swimnerd-templates/DataLogger.html)
 
 ## Overview
@@ -36,18 +36,19 @@ A utility page that connects to the WebSocket server and records all incoming me
 
 ## Themes
 
-Two themes are included:
+Three themes are included:
 
-- **Mario Theme** (`themes/mario-theme.css`) -- Retro pixel-art style using the Press Start 2P font with pipe animations and Mario character effects.
-- **Default Theme** (`themes/default-theme.css`) -- Clean, professional look with semi-transparent dark backgrounds, suitable for broadcast.
+- **Default** (`themes/default/`) -- Clean, professional look with semi-transparent dark backgrounds, suitable for broadcast.
+- **Mario** (`themes/mario/`) -- Retro pixel-art style using the Press Start 2P font with pipe animations and Mario character effects.
+- **Spooky** (`themes/spooky/`) -- Halloween-themed with eerie animations and effects.
 
-To switch themes, change the `<link>` tag in each overlay HTML file.
+Switch themes via the dropdown in the Simulator. See `themes/THEME_SPEC.md` for the full theme authoring guide.
 
 ## Setup
 
 ### Basic (Single Machine)
 
-No server needed. Open `Templates/Simulator.html` in a browser and toggle "Show Preview" to see the overlays. Communication uses the BroadcastChannel API automatically.
+No server needed. Open `Simulator.html` in a browser and toggle "Show Preview" to see the overlays. Communication uses the BroadcastChannel API automatically.
 
 ### With WebSocket Server (Cross-Machine or Data Logger)
 
@@ -56,13 +57,13 @@ A WebSocket relay server is needed for cross-machine setups or to use the Data L
 **Python:**
 ```bash
 pip install websockets
-python3 Templates/websocket-server.py
+python3 websocket-server.py
 ```
 
 **Node.js:**
 ```bash
-cd Templates && npm install
-node Templates/websocket-server.js
+npm install
+node websocket-server.js
 ```
 
 Both run on port 8080 and relay all received messages to all connected clients.
@@ -105,16 +106,24 @@ The system broadcasts JSON in this structure:
 ## Project Structure
 
 ```
-├── Templates/
-│   ├── Simulator.html          # Main control interface
-│   ├── HeaderOverlay.html      # Event header overlay
-│   ├── LaneOverlay.html        # Lane results overlay
-│   ├── TimerOverlay.html       # Race timer overlay
-│   ├── websocket-server.py     # Python WebSocket relay
-│   ├── websocket-server.js     # Node.js WebSocket relay
-│   └── themes/
-│       ├── mario-theme.css
-│       └── default-theme.css
-├── DataLogger.html             # WebSocket data logger
+├── Simulator.html               # Main control interface
+├── DataLogger.html              # WebSocket data logger
+├── LogCompressor.js             # Log compression utility
+├── websocket-server.js          # Node.js WebSocket relay
+├── websocket-server.py          # Python WebSocket relay
+├── js/                          # Shared overlay logic
+│   ├── overlay-core.js
+│   ├── lane-overlay.js
+│   ├── timer-overlay.js
+│   └── header-overlay.js
+├── css/                         # Structural layout CSS
+│   ├── lane-structure.css
+│   ├── timer-structure.css
+│   └── header-structure.css
+├── themes/                      # Theme directories
+│   ├── default/                 # Each has LaneOverlay, TimerOverlay, HeaderOverlay
+│   ├── mario/
+│   ├── spooky/
+│   └── THEME_SPEC.md           # Theme authoring guide
 └── README.md
 ```
