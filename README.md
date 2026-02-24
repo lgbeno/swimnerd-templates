@@ -57,13 +57,13 @@ A WebSocket relay server is needed for cross-machine setups or to use the Data L
 **Python:**
 ```bash
 pip install websockets
-python3 websocket-server.py
+python3 websocket-test-server/websocket-server.py
 ```
 
 **Node.js:**
 ```bash
-npm install
-node websocket-server.js
+cd websocket-test-server && npm install
+node websocket-test-server/websocket-server.js
 ```
 
 Both run on port 8080 and relay all received messages to all connected clients.
@@ -109,8 +109,6 @@ The system broadcasts JSON in this structure:
 ├── Simulator.html               # Main control interface
 ├── DataLogger.html              # WebSocket data logger
 ├── LogCompressor.js             # Log compression utility
-├── websocket-server.js          # Node.js WebSocket relay
-├── websocket-server.py          # Python WebSocket relay
 ├── js/                          # Shared overlay logic
 │   ├── overlay-core.js
 │   ├── lane-overlay.js
@@ -125,5 +123,8 @@ The system broadcasts JSON in this structure:
 │   ├── mario/
 │   ├── spooky/
 │   └── THEME_SPEC.md           # Theme authoring guide
+├── websocket-test-server/       # WebSocket relay server
+│   ├── websocket-server.js
+│   └── websocket-server.py
 └── README.md
 ```
