@@ -80,7 +80,7 @@ For same-machine OBS, the BroadcastChannel works with no additional setup. For r
 
 ## Creating a New Theme with Claude Code
 
-You can use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to generate a complete theme from a written description. Here's the workflow:
+You can use [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to generate a complete theme from a written description.
 
 ### 1. Clone the repo
 
@@ -95,7 +95,7 @@ cd swimnerd-templates
 mkdir themes/my-theme
 ```
 
-Write a design specification document (`.docx`, `.md`, or `.txt`) and place it in your theme folder. This document should describe the visual style you want — colors, fonts, animations, decorative elements, and overall feel. See `themes/spooky/Spooky Splash Spectacular Theme.docx` for an example of a spec that was used to generate the Spooky theme.
+Write a design specification document and place it in your theme folder. This can be a `.docx`, `.md`, or `.txt` file describing the visual style you want. See `themes/spooky/Spooky Splash Spectacular Theme.docx` for an example of a spec that was used to generate the Spooky theme.
 
 Your spec should cover:
 - **Color palette** — primary, secondary, accent, and background colors
@@ -105,25 +105,25 @@ Your spec should cover:
 - **Decorative elements** — mascots, icons, or themed ornaments
 - **Overall mood** — the theme or occasion (e.g., championship, holiday, school spirit)
 
-### 3. Launch Claude Code and generate the theme
+### 3. Run Claude Code with the generate prompt
 
-```bash
-claude
+From the repo root, launch Claude Code and paste the following prompt (replace `my-theme` with your folder name):
+
+```
+Read my theme spec document in themes/my-theme/ and the theme authoring
+guide at themes/THEME_SPEC.md. Use the default theme (themes/default/) as
+a structural reference. Generate three complete overlay HTML files —
+HeaderOverlay.html, LaneOverlay.html, and TimerOverlay.html — in
+themes/my-theme/. Each file must link the shared structural CSS and JS
+via ../../css/ and ../../js/ paths, and contain all theme-specific visual
+CSS inline in a <style> tag. After generating the files, add my-theme to
+the theme selector dropdown in Simulator.html. Finally, open Simulator.html
+in the browser so I can preview the result.
 ```
 
-Ask Claude to read your spec document and the theme authoring guide (`themes/THEME_SPEC.md`), then generate the three overlay HTML files:
+### 4. Iterate
 
-> Read my theme spec at `themes/my-theme/my-spec.docx` and the theme guide at `themes/THEME_SPEC.md`, then create `HeaderOverlay.html`, `LaneOverlay.html`, and `TimerOverlay.html` in `themes/my-theme/`.
-
-### 4. Register your theme in the Simulator
-
-Add your theme to the dropdown in `Simulator.html`:
-
-> Add "my-theme" to the theme selector dropdown in `Simulator.html`.
-
-### 5. Test with the Simulator
-
-Open `Simulator.html` in a browser, select your theme from the dropdown, and run a simulation to verify all three overlays display correctly. Iterate with Claude Code to refine colors, animations, or layout until you're happy with the result.
+Review the overlays in the Simulator and give Claude Code feedback to refine colors, animations, sizing, or any other details until you're happy with the result.
 
 ## Data Format
 
