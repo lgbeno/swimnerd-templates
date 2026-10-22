@@ -3,118 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timer Overlay — Spooky</title>
+    <title>Timer Overlay — Spooky Splash Spectacular</title>
     <link rel="stylesheet" href="../../css/timer-structure.css">
     <style>
-        /* ===== SPOOKY SPLASH SPECTACULAR THEME CSS ===== */
-        @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+        :root { --ink:#130e20; --orange:#ff9b38; --gold:#ffdc89; --violet:#b59aff; --green:#c2f790; }
+        body { font-family: 'Trebuchet MS', Arial, sans-serif; color:#fff4df; }
+        .placeholder-text { color:var(--gold); font-size:12px; letter-spacing:2px; }
+        @keyframes materialize { from { opacity:0; transform:translateY(12px) scale(.96); } to { opacity:1; transform:none; } }
+        @keyframes vanish { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(10px) scale(.96); } }
+        @keyframes float { 50% { transform:translateY(-4px) rotate(4deg); } }
 
-        :root {
-            --theme-font: 'Creepster', cursive;
-            --spooky-orange: #ff6600;
-            --spooky-purple: #4a0e4e;
-            --spooky-purple-light: #6b2070;
-            --spooky-green: #00cc44;
-            --spooky-yellow: #ffcc00;
-            --spooky-brown: #8B4513;
-            --spooky-black: #1a0a2e;
-            --border-width: 3px;
-            --border-radius: 10px;
-            --shadow-color: rgba(0, 0, 0, 0.6);
+        .timer-content { padding:9px 20px 9px 12px; gap:12px; border:1px solid #98b776; border-radius:12px; background:radial-gradient(ellipse at 0 100%,#415632,#14201b 75%); box-shadow:inset 0 0 0 4px #d9ffae08,0 0 20px #9cca6920; }
+        .timer-content.visible { animation:materialize .35s both; }
+        .timer-content.hiding { animation:vanish .28s both; }
+        .timer-label { color:var(--green); font-size:10px; letter-spacing:2px; margin:0; }
+        .running-time { font:bold 32px/1 'Courier New',monospace; letter-spacing:-1px; color:#e1ffc4; text-shadow:0 0 15px #a4e97740; }
+        .zombie-runner { width:38px; height:42px; flex-shrink:0; }
+        .zombie-runner svg { width:100%; height:100%; }
+        .visible .zombie-runner { animation:float .7s ease-in-out infinite; }
+        .clock-hand { display:none; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration:1ms !important; animation-delay:0ms !important; animation-iteration-count:1 !important; transition-duration:1ms !important; }
+            .event-name-wrapper.scrolling .event-name-track { animation:none !important; }
+            .spooky-runner { display:none !important; }
         }
-
-        body { font-family: var(--theme-font); }
-
-        .timer-content {
-            background: linear-gradient(180deg, var(--spooky-purple-light) 0%, var(--spooky-purple) 50%, #2d0630 100%);
-            border: var(--border-width) solid var(--spooky-orange);
-            border-radius: var(--border-radius);
-            box-shadow:
-                inset 0 -4px 0 rgba(0,0,0,0.4),
-                0 4px 12px var(--shadow-color),
-                0 0 20px rgba(255, 102, 0, 0.3),
-                0 0 40px rgba(74, 14, 78, 0.4);
-        }
-
-        .timer-content.visible {
-            animation: zombieAppear 0.6s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
-        }
-
-        .timer-content.hiding {
-            animation: zombieSink 0.4s ease-in forwards;
-        }
-
-        @keyframes zombieAppear {
-            0% { transform: scale(0.5) translateY(20px); opacity: 0; }
-            50% { transform: scale(1.05) translateY(-5px); opacity: 0.8; }
-            100% { transform: scale(1) translateY(0); opacity: 1; }
-        }
-
-        @keyframes zombieSink {
-            0% { transform: scale(1) translateY(0); opacity: 1; }
-            100% { transform: scale(0.8) translateY(30px); opacity: 0; }
-        }
-
-        .timer-label {
-            font-size: 1rem;
-            color: var(--spooky-orange);
-            text-shadow: 0 0 8px rgba(255, 102, 0, 0.5), 2px 2px 0 #000;
-        }
-
-        .running-time {
-            font-size: 2.2rem;
-            color: var(--spooky-green);
-            text-shadow:
-                0 0 10px rgba(0, 204, 68, 0.6),
-                0 0 20px rgba(0, 204, 68, 0.3),
-                2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
-            animation: eerieGlow 2s ease-in-out infinite;
-        }
-
-        @keyframes eerieGlow {
-            0%, 100% {
-                text-shadow:
-                    0 0 10px rgba(0, 204, 68, 0.6),
-                    0 0 20px rgba(0, 204, 68, 0.3),
-                    2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
-            }
-            50% {
-                text-shadow:
-                    0 0 15px rgba(0, 204, 68, 0.8),
-                    0 0 30px rgba(0, 204, 68, 0.5),
-                    0 0 45px rgba(0, 204, 68, 0.2),
-                    2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
-            }
-        }
-
-        /* Running zombie decoration */
-        .zombie-runner {
-            display: inline-block;
-            width: 50px;
-            height: 50px;
-            margin-right: 10px;
-            flex-shrink: 0;
-            position: relative;
-        }
-
-        .zombie-runner svg {
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Zombie running leg animation when timer visible */
-        .timer-content.visible .zombie-runner {
-            animation: zombieWalk 0.6s steps(2) infinite;
-        }
-
-        @keyframes zombieWalk {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-3px) rotate(2deg); }
-            100% { transform: translateY(0); }
-        }
-
-        /* Hide the clock-hand (not used in zombie theme) */
-        .clock-hand { display: none; }
     </style>
 </head>
 <body>
@@ -173,7 +86,7 @@
     <script src="../../js/overlay-core.js"></script>
     <script src="../../js/timer-overlay.js"></script>
     <script>
-        SwimOverlay.init({ onData: processTimerData });
+        if (new URLSearchParams(location.search).get("preview") !== "1") SwimOverlay.init({ onData: processTimerData });
     </script>
 </body>
 </html>

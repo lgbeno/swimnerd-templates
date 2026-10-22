@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spooky Spectacular — Full-screen Effects</title>
+<style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; pointer-events: none; }
+    .definitions { position: absolute; width: 0; height: 0; overflow: hidden; }
+    #stage { position: absolute; inset: 0; overflow: hidden; }
+    .effect { position: absolute; pointer-events: none; }
+    .ghost { left: -220px; top: 25%; width: clamp(90px, 10vw, 200px); animation: ghostJourney 9s linear both; filter: drop-shadow(0 0 14px #c9d9ff66); }
+    .ghost svg { width: 100%; animation: bob 2.3s ease-in-out infinite; }
+    .ghost.friend { top: 41%; width: clamp(65px, 7vw, 135px); animation-delay: .9s; }
+    @keyframes ghostJourney { 0% { transform: translateX(0); opacity: 0; } 8%, 86% { opacity: .9; } 100% { transform: translateX(calc(100vw + 440px)); opacity: 0; } }
+    @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-25px) rotate(7deg); } }
+    .frank { left: 9%; bottom: -8px; width: clamp(130px, 15vw, 285px); animation: peek 10s ease-in-out both; filter: drop-shadow(0 6px 8px #0007); }
+    .frank svg { width: 100%; overflow: visible; }
+    .wave { transform-origin: 164px 152px; animation: wave .8s ease-in-out infinite alternate; }
+    .blink { transform-origin: 100px 82px; animation: blink 4s infinite; }
+    @keyframes peek { 0%, 100% { transform: translateY(105%) rotate(-8deg); } 17%, 83% { transform: translateY(0) rotate(0); } }
+    @keyframes wave { to { transform: rotate(-28deg); } }
+    @keyframes blink { 0%, 43%, 49%, 100% { transform: scaleY(1); } 46% { transform: scaleY(.1); } }
+    .spider { left: 5%; top: 0; width: clamp(150px, 19vw, 365px); height: 58%; animation: spiderVisit 10s ease-in-out both; }
+    .spider svg { width: 100%; height: 100%; overflow: visible; }
+    .web { fill: none; stroke: #eee1ff; stroke-width: 1.2; opacity: .62; stroke-dasharray: 650; stroke-dashoffset: 650; animation: weave 3s ease-out forwards; }
+    .spider-body { animation: descend 3s cubic-bezier(.3,0,.3,1) both; }
+    .silk { stroke: #eee1ff; stroke-width: 1.4; }
+    @keyframes weave { to { stroke-dashoffset: 0; } }
+    @keyframes descend { from { transform: translateY(-230px); } to { transform: translateY(0); } }
+    @keyframes spiderVisit { 0% { opacity: 0; } 6%, 85% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-35%); } }
+    .bat { left: -120px; top: 19%; width: clamp(55px, 6vw, 110px); animation: batJourney 7s linear both; filter: drop-shadow(0 0 3px #debfff90); }
+    .bat svg { width: 100%; animation: flutter .32s ease-in-out infinite alternate; }
+    @keyframes batJourney { from { transform: translate(0, 15vh); } to { transform: translate(calc(100vw + 240px), -5vh); } }
+    @keyframes flutter { to { transform: scaleY(.5) rotate(8deg); } }
+
+    /* Shared paths keep the cast lightweight: no video, fonts, or image downloads. */
+    .effect svg { display:block; width:100%; height:auto; overflow:visible; }
+    .spider svg { height:100%; }
+    .traveler { left:-330px; top:24%; width:clamp(150px,16vw,300px); animation:crossing 9s linear both; filter:drop-shadow(0 3px 5px #21132c70); }
+    @keyframes crossing { 0% { transform:translateX(0); opacity:0; } 6%,94% { opacity:1; } 100% { transform:translateX(calc(100vw + 660px)); opacity:0; } }
+    .witch svg { animation:bob 1.6s ease-in-out infinite; }
+    .spark { position:absolute; color:#ffe5a1; font-size:35px; animation:sparkle 1s ease-in-out infinite alternate; }
+    .spark:nth-child(2) { left:-30px; top:65%; animation-delay:.2s; }.spark:nth-child(3) { left:-75px; top:75%; animation-delay:.5s; }
+    @keyframes sparkle { to { opacity:.1; transform:scale(.4) rotate(70deg); } }
+    .pumpkin-roll { top:auto; bottom:3%; width:clamp(85px,9vw,175px); }
+    .pumpkin-roll svg { animation:tumble 1.3s ease-in-out infinite; }
+    @keyframes tumble { 0%,100% { transform:translateY(0) rotate(-20deg); } 50% { transform:translateY(-50px) rotate(25deg); } }
+    .mummy { top:auto; bottom:3%; width:clamp(100px,11vw,210px); }
+    .mummy svg { animation:shuffle .45s ease-in-out infinite alternate; }
+    @keyframes shuffle { to { transform:translateY(-9px) rotate(4deg); } }
+    .bandage { stroke-dasharray:10 4; animation:unravel .6s linear infinite; }
+    @keyframes unravel { to { stroke-dashoffset:-28; } }
+    .cat { top:auto; bottom:4%; width:clamp(120px,13vw,250px); animation:catPounce 9s ease-in-out both; }
+    @keyframes catPounce { 0% { transform:translateX(0); } 25% { transform:translateX(25vw); } 40% { transform:translateX(25vw) scaleY(.85); } 60% { transform:translate(55vw,-20vh) rotate(-12deg); } 78% { transform:translate(75vw,0); } 100% { transform:translateX(calc(100vw + 660px)); } }
+    .corner-cameo { left:8%; bottom:0; width:clamp(150px,17vw,325px); animation:peek 9s ease-in-out both; }
+    .cauldron .bubble { position:absolute; bottom:55%; left:40%; width:22%; animation:bubbleRise 3s ease-out infinite; }
+    .cauldron .bubble:nth-child(2) { left:12%; animation-delay:.6s; }.cauldron .bubble:nth-child(3) { left:65%; animation-delay:1.3s; }
+    .bubble::before { content:''; position:absolute; inset:0; border:2px solid #d7ff98; border-radius:50%; background:#aeff6750; }
+    .bubble svg { opacity:0; animation:becomeGhost 3s infinite; }
+    @keyframes bubbleRise { from { transform:translateY(0) scale(.5); opacity:0; } 20% { opacity:1; } to { transform:translateY(-32vh) scale(1.2); opacity:0; } }
+    @keyframes becomeGhost { 35%,80% { opacity:1; } }
+    .skeleton svg { animation:boneDance .65s ease-in-out infinite alternate; transform-origin:50% 90%; }
+    @keyframes boneDance { to { transform:rotate(12deg) translateY(-15px); } }
+    .swimmer-ghost { top:30%; width:clamp(100px,11vw,210px); }
+    .swimmer-ghost svg { animation:swimStroke .8s ease-in-out infinite alternate; }
+    @keyframes swimStroke { to { transform:translateY(-13px) rotate(12deg); } }
+    .particle { left:var(--x); top:-100px; width:clamp(25px,3vw,58px); animation:fall 7s linear both; animation-delay:var(--delay); filter:drop-shadow(0 2px 2px #27153740); }
+    .particle svg { animation:spin 2s linear infinite; }
+    @keyframes fall { 0% { transform:translate(0,0); opacity:0; } 8%,85% { opacity:1; } 100% { transform:translate(var(--drift),calc(100vh + 200px)); opacity:0; } }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .leaf { animation-name:leafSpiral; }
+    @keyframes leafSpiral { 0% { opacity:0; transform:translate(0,0); } 15%,80% { opacity:1; } 40% { transform:translate(14vw,40vh); } 70% { transform:translate(-4vw,65vh); } 100% { opacity:0; transform:translate(12vw,calc(100vh + 150px)); } }
+    .monster { bottom:-8px; left:var(--x); width:clamp(100px,11vw,210px); color:var(--skin); animation:peek 8s ease-in-out both; animation-delay:var(--delay); }
+    .monster .monster-face { animation:revealMonster 8s both; }
+    @keyframes revealMonster { 0%,15% { opacity:0; } 30%,100% { opacity:1; } }
+    .portal { left:20%; bottom:5%; width:clamp(160px,20vw,380px); height:clamp(220px,26vw,500px); animation:portalVisit 9s ease-in-out both; }
+    .portal-ring { position:absolute; inset:0; border:8px solid #c2a0ff; border-radius:50%; background:radial-gradient(ellipse,#473b6966,#8b42dc33 60%,#e5bcff99); box-shadow:0 0 22px #a461ff,inset 0 0 24px #d4a5ff; animation:portalPulse 1.5s ease-in-out infinite alternate; }
+    .portal-pumpkin { position:absolute; width:80%; left:10%; bottom:0; animation:portalHop 9s ease-in-out both; }
+    .pumpkin-wave { transform-origin:155px 112px; animation:wave .8s ease-in-out infinite alternate; }
+    @keyframes portalVisit { 0%,100% { opacity:0; transform:scale(.1); } 15%,85% { opacity:1; transform:scale(1); } }
+    @keyframes portalPulse { to { transform:scaleX(.92); opacity:.7; } }
+    @keyframes portalHop { 0%,15%,100% { transform:scale(.1); opacity:0; } 35% { transform:translateY(-50px) scale(1); opacity:1; } 50%,85% { transform:translateY(0) scale(1); opacity:1; } }
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation: none !important; }
+        .ghost { left: 8%; opacity: .9; }
+        .ghost.friend { left: 22%; }
+        .frank { transform: none; }
+        .web { stroke-dashoffset: 0; }
+        .bat { left: 25%; }
+        .traveler { left:15%; }
+        .particle { top:25%; }
+        .monster { bottom:0; }
+        .bubble { display:none; }
+    }
+</style>
+</head>
+<body>
+<svg class="definitions" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <linearGradient id="ghostGlow" x2=".3" y2="1"><stop stop-color="#fffef0"/><stop offset="1" stop-color="#b6b5f0" stop-opacity=".65"/></linearGradient>
+    <linearGradient id="skin" x2="1" y2="1"><stop stop-color="#d4ed96"/><stop offset="1" stop-color="#74af63"/></linearGradient>
+    <symbol id="ghost-art" viewBox="0 0 180 220">
+        <path d="M28 119C6 99 2 125 14 143L27 154L20 201Q40 177 57 199Q74 220 91 198Q109 180 124 199Q143 218 165 200L150 119C148 35 122 14 90 14C51 14 26 44 28 119Z" fill="url(#ghostGlow)" stroke="#f7eeff" stroke-width="3"/>
+        <path d="M147 110Q176 91 174 116Q171 132 152 143" fill="#dad9fa" stroke="#f7eeff" stroke-width="3"/>
+        <g fill="#30243e"><ellipse cx="65" cy="88" rx="9" ry="14"/><ellipse cx="112" cy="88" rx="9" ry="14"/><path d="M76 115Q90 134 104 115Q91 145 76 115Z"/></g>
+        <g fill="#fff"><circle cx="68" cy="84" r="3"/><circle cx="115" cy="84" r="3"/></g><g fill="#edb1c9" opacity=".6"><ellipse cx="49" cy="108" rx="12" ry="6"/><ellipse cx="127" cy="108" rx="12" ry="6"/></g>
+        <path d="M42 52Q51 32 70 29" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="frank-art" viewBox="0 0 220 290">
+        <g class="wave"><path d="M157 163L185 140L187 106" fill="none" stroke="#6e5689" stroke-width="27" stroke-linecap="round"/><path d="M185 111L179 88M187 109L190 83M191 112L200 91" stroke="#adcf80" stroke-width="9" stroke-linecap="round"/></g>
+        <path d="M47 282L46 189Q44 157 71 151H139Q162 157 168 189L174 286" fill="#473750" stroke="#211c30" stroke-width="5"/>
+        <path d="M71 153L100 203L139 153L125 240H82Z" fill="#e6cf9e"/><path d="M69 151L56 187L80 197L68 217L99 244M138 151L154 188L130 197L143 215L102 244" fill="#796088" stroke="#211c30" stroke-width="3"/>
+        <path d="M53 170Q23 191 29 235" fill="none" stroke="#6e5689" stroke-width="26" stroke-linecap="round"/><ellipse cx="30" cy="243" rx="15" ry="19" fill="url(#skin)"/>
+        <path d="M83 129V162Q104 179 127 160V129" fill="#7faf65" stroke="#25362d" stroke-width="4"/>
+        <g fill="#bec6d3" stroke="#333343" stroke-width="3"><rect x="29" y="108" width="28" height="13" rx="3"/><rect x="151" y="108" width="28" height="13" rx="3"/><rect x="26" y="102" width="10" height="24" rx="3"/><rect x="174" y="102" width="10" height="24" rx="3"/></g>
+        <rect x="48" y="25" width="112" height="125" rx="25" fill="url(#skin)" stroke="#25362d" stroke-width="4"/>
+        <path d="M47 64V35Q45 17 65 19H146Q165 20 161 42V65L149 48L140 58L128 45L114 55L101 43L87 56L76 46L63 60L57 48Z" fill="#27243b"/>
+        <path d="M59 70L82 66M124 66L147 71" stroke="#354c35" stroke-width="5" stroke-linecap="round"/>
+        <g class="blink" fill="#fff5d5"><ellipse cx="77" cy="85" rx="13" ry="14"/><ellipse cx="133" cy="85" rx="13" ry="14"/><g fill="#292439"><circle cx="80" cy="86" r="6"/><circle cx="130" cy="86" r="6"/></g></g>
+        <path d="M87 118Q105 137 125 116" fill="#fff1ce" stroke="#334530" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M60 103L77 109M64 101L62 107M71 104L69 111" stroke="#657849" stroke-width="2"/>
+        <circle cx="102" cy="253" r="4" fill="#c2a5cf"/>
+    </symbol>
+    <symbol id="bat-art" viewBox="0 0 140 80"><path d="M5 16Q29 30 51 9L62 32L68 21L75 32L88 9Q107 29 135 16Q129 45 107 46L96 65L78 55L69 69L59 55L43 65L32 46Q11 45 5 16Z" fill="#30223c" stroke="#ac8ccc" stroke-width="2"/><g fill="#ffde8a"><circle cx="62" cy="43" r="3"/><circle cx="77" cy="43" r="3"/></g></symbol>
+
+    <symbol id="pumpkin-art" viewBox="0 0 180 170">
+      <path d="M86 34Q72 11 97 6L105 15Q90 14 96 38" fill="#91ad59" stroke="#354e32" stroke-width="4"/>
+      <path d="M99 28Q127 7 138 30Q121 44 99 28" fill="#abc67b"/>
+      <ellipse cx="90" cy="100" rx="80" ry="62" fill="#ef8a31" stroke="#873f25" stroke-width="4"/>
+      <ellipse cx="90" cy="100" rx="49" ry="62" fill="#ffa63e" stroke="#d87426" stroke-width="3"/>
+      <ellipse cx="90" cy="100" rx="22" ry="60" fill="#ffb64c"/>
+      <path d="M37 91L63 69L71 99Z M110 98L118 69L144 91Z M45 115Q90 143 139 114L126 141L109 139L98 151L78 150L70 136L55 137Z" fill="#fff1a4" stroke="#9c5021" stroke-width="3"/>
+    </symbol>
+    <symbol id="witch-art" viewBox="0 0 300 220">
+      <path d="M33 181L258 163" stroke="#a76e41" stroke-width="9" stroke-linecap="round"/><path d="M64 171L12 159L18 198L68 184" fill="#e8b66e" stroke="#9a643d" stroke-width="3"/>
+      <path d="M140 111L109 170Q157 187 204 162L175 113" fill="#684183" stroke="#32253e" stroke-width="4"/>
+      <path d="M174 122L203 157L239 153" fill="none" stroke="#a8ce81" stroke-width="12" stroke-linecap="round"/>
+      <path d="M156 173L168 199L205 193" fill="none" stroke="#3a2c49" stroke-width="14" stroke-linecap="round"/>
+      <path d="M124 72Q100 91 121 141L139 115L170 128L186 109L189 65" fill="#d59655"/>
+      <ellipse cx="153" cy="86" rx="35" ry="37" fill="#c3e49d" stroke="#3f503c" stroke-width="3"/>
+      <path d="M98 60L198 61L188 73L107 73Z M116 61L144 5L160 18L166 44L184 61" fill="#49345f" stroke="#251d36" stroke-width="3"/>
+      <path d="M124 44L174 44L181 57L117 57Z" fill="#eea747"/><rect x="144" y="44" width="13" height="13" fill="none" stroke="#ffe5a1" stroke-width="3"/>
+      <g fill="#30253b"><ellipse cx="141" cy="87" rx="4" ry="6"/><ellipse cx="168" cy="87" rx="4" ry="6"/></g><path d="M144 103Q154 114 166 102" fill="none" stroke="#53603c" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="mummy-art" viewBox="-90 0 260 250">
+      <path class="bandage" d="M65 155Q-5 117 -20 172Q-40 205 -80 165" fill="none" stroke="#f4e6cb" stroke-width="14"/>
+      <g stroke="#d0bfa6" stroke-width="4" fill="#f5ead4"><rect x="46" y="99" width="80" height="99" rx="26"/><rect x="49" y="19" width="75" height="91" rx="27"/><path d="M51 130L16 148L9 128L48 109M123 112L156 132L146 151L120 138"/><path d="M58 187L51 237L77 238L88 190M100 190L103 238L132 238L122 183"/></g>
+      <g fill="none" stroke="#cab99d" stroke-width="5"><path d="M52 38L120 53M49 62L123 78M56 90L113 99M50 122L124 137M47 148L123 163M51 174L122 188M55 213L82 219M104 214L127 210"/></g>
+      <path d="M56 57L115 61L112 80L56 78" fill="#403347"/><g fill="#ffe3a0"><ellipse cx="72" cy="68" rx="7" ry="9"/><ellipse cx="101" cy="70" rx="7" ry="9"/></g><g fill="#352a40"><circle cx="73" cy="69" r="3"/><circle cx="100" cy="71" r="3"/></g>
+    </symbol>
+    <symbol id="cat-art" viewBox="0 0 240 170">
+      <path d="M60 116Q-5 119 14 64Q26 40 38 67" fill="none" stroke="#b69acb" stroke-width="19" stroke-linecap="round"/><path d="M60 116Q-5 119 14 64Q26 40 38 67" fill="none" stroke="#30263e" stroke-width="14" stroke-linecap="round"/>
+      <ellipse cx="110" cy="116" rx="67" ry="35" fill="#30263e" stroke="#b69acb" stroke-width="3"/>
+      <path d="M77 136L65 159M129 137L143 159M158 132L183 152" stroke="#30263e" stroke-width="16" stroke-linecap="round"/>
+      <path d="M149 93L143 27L172 48L199 27L211 94Q181 129 149 93Z" fill="#30263e" stroke="#b69acb" stroke-width="3"/>
+      <path d="M149 41L155 67L169 54M195 43L182 54L202 68" fill="#b27ba9"/>
+      <g fill="#d9ee86"><ellipse cx="165" cy="79" rx="9" ry="7"/><ellipse cx="190" cy="79" rx="9" ry="7"/></g><path d="M165 74V84M190 74V84" stroke="#34283e" stroke-width="3"/><path d="M173 94L181 94L177 99Z" fill="#f4b3c7"/><path d="M158 94L134 88M158 100L134 104M196 94L223 87M195 100L222 104" stroke="#e2cce8" stroke-width="2"/>
+    </symbol>
+    <symbol id="cauldron-art" viewBox="0 0 220 200">
+      <path d="M57 165L44 191M160 165L175 191" stroke="#3d2d4e" stroke-width="17" stroke-linecap="round"/><path d="M43 64Q8 194 111 186Q208 185 179 64" fill="#3f3056" stroke="#b895d0" stroke-width="4"/>
+      <ellipse cx="110" cy="65" rx="79" ry="25" fill="#c0f78b" stroke="#7b5798" stroke-width="10"/>
+      <path d="M45 74Q52 129 64 83Q81 71 86 102Q98 122 103 83" fill="#c0f78b"/><g fill="#f4ffd3"><circle cx="79" cy="61" r="8"/><circle cx="133" cy="55" r="11"/><circle cx="151" cy="70" r="5"/></g><path d="M151 109Q173 153 143 161" stroke="#9273ab" stroke-width="8" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="skeleton-art" viewBox="0 0 210 300">
+      <g stroke="#f1e8db" stroke-width="13" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M103 97V206M65 119L34 159L13 123M137 119L175 99L191 64M102 204L68 249L79 283M111 204L153 247L171 273"/></g>
+      <g stroke="#c6b5c9" stroke-width="3" fill="#fff2dc"><rect x="65" y="19" width="79" height="76" rx="28"/><path d="M78 88V103H132V88"/><path d="M99 113Q52 102 66 128L97 136M112 113Q157 102 144 128L114 136M98 144Q57 129 69 152L99 160M111 144Q151 129 141 152L111 160M99 170Q70 159 78 182L99 189M111 170Q142 159 134 182L111 189"/></g>
+      <g fill="#44344f"><ellipse cx="86" cy="62" rx="12" ry="15"/><ellipse cx="124" cy="62" rx="12" ry="15"/><path d="M105 75L99 86H112Z"/></g><path d="M91 94V102M104 94V103M117 94V102" stroke="#44344f" stroke-width="3"/>
+    </symbol>
+    <symbol id="swim-ghost-art" viewBox="0 0 180 220"><use href="#ghost-art" width="180" height="220"/><path d="M29 72Q25 10 91 10Q151 10 150 72L130 62L111 63L97 57L79 63L60 61Z" fill="#ffae4b" stroke="#fff0b2" stroke-width="3"/><path d="M31 82H151" stroke="#7d53a1" stroke-width="9"/><g fill="#b9ebf4" fill-opacity=".8" stroke="#493659" stroke-width="5"><rect x="46" y="74" width="36" height="27" rx="10"/><rect x="99" y="74" width="36" height="27" rx="10"/><path d="M81 86H99"/></g><path d="M35 165Q90 187 143 165" stroke="#b9edff" stroke-width="5" fill="none"/></symbol>
+    <symbol id="leaf-art" viewBox="0 0 90 100"><path d="M45 5L56 28L77 20L72 43L88 52L63 69L58 88L44 78L28 89L25 68L5 53L24 43L18 22L37 30Z" fill="currentColor" stroke="#86492f" stroke-width="2"/><path d="M45 21V98M45 65L25 49M45 54L64 36" stroke="#ffe1a0" stroke-width="3" fill="none"/></symbol>
+    <symbol id="candy-art" viewBox="0 0 100 70"><path d="M29 23L7 10L12 35L6 60L29 48M71 23L93 10L88 35L94 60L71 48" fill="#c1a4ed" stroke="#674687" stroke-width="3"/><rect x="22" y="16" width="56" height="40" rx="15" fill="#ffb454" stroke="#985927" stroke-width="3"/><path d="M37 18L52 55M53 17L68 52" stroke="#fff0c3" stroke-width="9"/></symbol>
+    <symbol id="corn-art" viewBox="0 0 80 100"><path d="M31 12Q40 0 49 12L75 80Q80 94 64 94H16Q0 94 5 80Z" fill="#ffd95d" stroke="#a26b2e" stroke-width="3"/><path d="M18 47H62L71 73H9Z" fill="#ff9541"/><path d="M31 12Q40 0 49 12L57 34H23Z" fill="#fff5dd"/></symbol>
+    <symbol id="monster-art" viewBox="0 0 180 200"><g class="monster-face"><path d="M39 57L23 19L61 38M124 40L157 18L145 64" fill="#f0d7a9" stroke="#6e547f" stroke-width="4"/><path d="M20 200V86Q17 31 87 31Q158 27 160 86V200" fill="currentColor" stroke="#684e7c" stroke-width="4"/><path d="M62 134Q92 158 121 134L110 163L91 170L74 161Z" fill="#43304b"/><path d="M74 143L86 147L77 158M101 147L113 142L109 156" fill="#fff3d2"/></g><g fill="#fff4c4"><ellipse cx="62" cy="89" rx="20" ry="25"/><ellipse cx="117" cy="89" rx="20" ry="25"/></g><g fill="#42304e"><ellipse cx="68" cy="94" rx="8" ry="12"/><ellipse cx="111" cy="94" rx="8" ry="12"/></g></symbol>
+</defs></svg>
+<div id="stage" aria-hidden="true"></div>
+<script>
+(() => {
+    const stage = document.getElementById('stage');
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    const catalog = [
+        ['ghosts','Ghost parade'], ['frankenstein','Frankenstein wave'], ['spider','Spider web'],
+        ['bats','Bat flock'], ['witch','Witch flyby'], ['pumpkins','Pumpkin tumble'],
+        ['mummy','Mummy unravel'], ['cat','Black cat'], ['cauldron','Cauldron bubbles'],
+        ['skeleton','Skeleton dance'], ['swimmers','Haunted swim team'], ['leaves','Autumn whirlwind'],
+        ['candy','Candy shower'], ['monsters','Monster peekaboo'], ['portal','Pumpkin portal']
+    ].map(([id, name]) => ({ id, name }));
+    const sequence = catalog.map(item => item.id);
+    let bag = [], lastPick;
+    function playNext() {
+        if (!bag.length) {
+            bag = [...sequence];
+            for (let i = bag.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [bag[i], bag[j]] = [bag[j], bag[i]];
+            }
+            // Avoid a back-to-back repeat across two complete rounds, too.
+            if (bag[bag.length - 1] === lastPick) [bag[0], bag[bag.length - 1]] = [bag[bag.length - 1], bag[0]];
+        }
+        lastPick = bag.pop();
+        play(lastPick);
+        return lastPick;
+    }
+    let cleanup, cycle;
+    let enabled = new URLSearchParams(location.search).get('autoplay') !== '0';
+    const views = { 'ghost-art': '0 0 180 220', 'frank-art': '0 0 220 290', 'bat-art': '0 0 140 80', 'pumpkin-art':'0 0 180 170', 'witch-art':'0 0 300 220', 'mummy-art':'-90 0 260 250', 'cat-art':'0 0 240 170', 'cauldron-art':'0 0 220 200', 'skeleton-art':'0 0 210 300', 'swim-ghost-art':'0 0 180 220', 'leaf-art':'0 0 90 100', 'candy-art':'0 0 100 70', 'corn-art':'0 0 80 100', 'monster-art':'0 0 180 200' };
+    const art = id => `<svg viewBox="${views[id]}" aria-hidden="true"><use href="#${id}"/></svg>`;
+    function add(className, content, styles = {}) {
+        const element=document.createElement('div');
+        element.className=`effect ${className}`;
+        element.innerHTML=content;
+        Object.assign(element.style,styles);
+        stage.append(element);
+        return element;
+    }
+    function play(type) {
+        if (!sequence.includes(type)) return;
+        clearTimeout(cleanup);
+        stage.replaceChildren(); // One vignette at a time; never accumulate particles.
+        if (type === 'ghosts') {
+            stage.innerHTML = `<div class="effect ghost">${art('ghost-art')}</div><div class="effect ghost friend">${art('ghost-art')}</div>`;
+        } else if (type === 'frankenstein') {
+            stage.innerHTML = `<div class="effect frank">${art('frank-art')}</div>`;
+        } else if (type === 'bats') {
+            for (let i = 0; i < 5; i++) {
+                const bat = document.createElement('div');
+                bat.className = 'effect bat';
+                bat.style.top = `${19 + i * 3}%`;
+                bat.style.animationDelay = `${i * .4}s`;
+                bat.innerHTML = art('bat-art');
+                stage.append(bat);
+            }
+        } else if (type === 'spider') {
+            stage.innerHTML = `<div class="effect spider"><svg viewBox="0 0 300 480" preserveAspectRatio="xMinYMin meet">
+                <path class="web" d="M0 0L270 0M0 0L252 78M0 0L202 148M0 0L130 210M0 0L52 240M0 0L0 260M65 0Q57 14 60 19Q42 20 48 35Q29 33 31 50Q11 44 12 58Q0 50 0 65M130 0Q114 30 120 38Q85 40 96 70Q58 65 62 100Q22 90 25 115Q0 103 0 130M195 0Q172 45 180 56Q127 60 144 105Q88 97 93 150Q34 135 38 173Q0 154 0 195M260 0Q230 60 240 75Q170 80 192 140Q116 130 124 200Q45 180 50 230Q0 206 0 260"/>
+                <g class="spider-body"><path class="silk" d="M152 -260V308"/>
+                <g fill="none" stroke="#bda0dd" stroke-width="5" stroke-linecap="round"><path d="M140 327L112 308L100 324M137 336L107 333L96 347M139 346L114 359L109 374M164 327L190 308L202 324M166 337L196 333L208 347M164 346L188 359L193 374"/></g>
+                <ellipse cx="152" cy="339" rx="24" ry="29" fill="#5b4075" stroke="#c3a3eb" stroke-width="2"/><circle cx="142" cy="328" r="8" fill="#fff3d2"/><circle cx="162" cy="328" r="8" fill="#fff3d2"/><g fill="#241c36"><circle cx="144" cy="329" r="4"/><circle cx="160" cy="329" r="4"/></g><path d="M144 346Q152 354 160 346" fill="none" stroke="#ffcc83" stroke-width="3" stroke-linecap="round"/></g></svg></div>`;
+
+        } else if (type === 'witch') {
+            stage.innerHTML = `<div class="effect traveler witch">${art('witch-art')}<span class="spark">✦</span><span class="spark">✧</span></div>`;
+        } else if (type === 'pumpkins') {
+            for (let i=0;i<3;i++) add('traveler pumpkin-roll', art('pumpkin-art'), { animationDelay:`${i*.35}s`, bottom:`${3+i*4}%` });
+        } else if (type === 'mummy' || type === 'cat') {
+            add(`traveler ${type}`, art(`${type}-art`));
+        } else if (type === 'cauldron') {
+            add('corner-cameo cauldron', `${art('cauldron-art')}<div class="bubble">${art('ghost-art')}</div><div class="bubble">${art('ghost-art')}</div><div class="bubble">${art('ghost-art')}</div>`);
+        } else if (type === 'skeleton') {
+            add('corner-cameo skeleton', art('skeleton-art'));
+        } else if (type === 'swimmers') {
+            for (let i=0;i<3;i++) add('traveler swimmer-ghost',art('swim-ghost-art'), { top:`${24+i*11}%`, animationDelay:`${i*.25}s` });
+        } else if (type === 'leaves' || type === 'candy') {
+            for (let i=0;i<20;i++) {
+                const symbol = type === 'leaves' ? 'leaf-art' : i%2 ? 'candy-art' : 'corn-art';
+                const particle = add(`particle ${type === 'leaves' ? 'leaf' : ''}`,art(symbol));
+                // Keep candy at the sides; leaves form a loose spiral across the pool.
+                particle.style.setProperty('--x', `${type === 'candy' ? (i%2 ? 85+i%10 : i%10) : i*4.7}%`);
+                particle.style.setProperty('--delay', `${(i%7)*.35}s`);
+                particle.style.setProperty('--drift', `${i%2 ? -8 : 8}vw`);
+                particle.style.color=['#ffa24c','#c0a0ea','#edc76c'][i%3];
+            }
+        } else if (type === 'monsters') {
+            for (let i=0;i<3;i++) {
+                const monster=add('monster',art('monster-art'));
+                monster.style.setProperty('--x',`${5+i*19}%`);
+                monster.style.setProperty('--delay',`${i*.6}s`);
+                monster.style.setProperty('--skin',['#b8d989','#b99adf','#f1b772'][i]);
+            }
+        } else if (type === 'portal') {
+            add('portal',`<div class="portal-ring"></div><div class="portal-pumpkin"><svg viewBox="-35 0 250 190"><path d="M22 117L-14 135" stroke="#96b775" stroke-width="10" stroke-linecap="round"/><g class="pumpkin-wave"><path d="M155 112L194 97L199 71" stroke="#96b775" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M198 77L187 63M200 77L207 57" stroke="#badd95" stroke-width="7" stroke-linecap="round"/></g><use href="#pumpkin-art" width="180" height="170"/></svg></div>`);
+        }
+        cleanup = setTimeout(() => stage.replaceChildren(), motion.matches ? 4500 : 10000);
+    }
+    function stop() {
+        enabled = false;
+        clearInterval(cycle);
+        clearTimeout(cleanup);
+        stage.replaceChildren();
+    }
+    function start() {
+        stop();
+        enabled = true;
+        if (motion.matches || document.hidden) return;
+        playNext();
+        cycle = setInterval(playNext, 20000);
+    }
+    window.SpookyEffects = { play, playNext, stop, start, catalog };
+    motion.addEventListener('change', () => { if (enabled) start(); });
+    document.addEventListener('visibilitychange', () => { if (enabled) start(); });
+    if (enabled) start();
+})();
+</script>
+</body>
+</html>

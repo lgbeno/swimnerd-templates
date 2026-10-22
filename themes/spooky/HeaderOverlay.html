@@ -3,324 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Header Overlay — Spooky</title>
+    <title>Header Overlay — Spooky Splash Spectacular</title>
     <link rel="stylesheet" href="../../css/header-structure.css">
     <style>
-        /* ===== SPOOKY SPLASH SPECTACULAR THEME CSS ===== */
-        @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+        :root { --ink:#130e20; --orange:#ff9b38; --gold:#ffdc89; --violet:#b59aff; --green:#c2f790; }
+        body { font-family: 'Trebuchet MS', Arial, sans-serif; color:#fff4df; }
+        .placeholder-text { color:var(--gold); font-size:12px; letter-spacing:2px; }
+        @keyframes materialize { from { opacity:0; transform:translateY(12px) scale(.96); } to { opacity:1; transform:none; } }
+        @keyframes vanish { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(10px) scale(.96); } }
+        @keyframes float { 50% { transform:translateY(-4px) rotate(4deg); } }
 
-        :root {
-            --theme-font: 'Creepster', cursive;
-            --spooky-orange: #ff6600;
-            --spooky-purple: #4a0e4e;
-            --spooky-purple-light: #6b2070;
-            --spooky-green: #00cc44;
-            --spooky-yellow: #ffcc00;
-            --spooky-brown: #8B4513;
-            --spooky-black: #1a0a2e;
-            --border-width: 3px;
-            --border-radius: 8px;
-            --shadow-color: rgba(0, 0, 0, 0.6);
-        }
+        .header-container, .placeholder-container { gap:10px; top:12px; left:14px; right:14px; height:76px; }
+        .header-box { overflow:visible; }
+        .header-box.stretch { min-width:0; }
+        #eventBox, #heatBox { width:100px; }
+        .header-content { position:relative; border:1px solid #9d744b; box-shadow:inset 0 0 0 4px #ffffff05, 0 5px 12px #0008; }
+        .header-content.visible, .header-content.appearing { animation:materialize .35s both; }
+        .header-content.hiding, .header-content.exploding { animation:vanish .3s both; }
+        .header-box.fixed .header-content { padding:5px 12px; flex-direction:column; justify-content:center; gap:1px; border-radius:27px 27px 7px 7px; background:linear-gradient(120deg,#565066,#272332 70%); border-color:#8b8196; }
+        .header-box.fixed .header-content::before { content:''; position:absolute; inset:5px; border:1px solid #c9bbcf30; border-radius:22px 22px 3px 3px; pointer-events:none; }
+        .label { font-size:10px; letter-spacing:3px; color:#d3c9dc; margin:0; }
+        .value { font: bold 35px/1 Georgia,serif; color:#fff0d4; text-shadow:0 2px 1px #000; }
+        #nameContent { flex-direction:column; justify-content:center; padding:8px 45px; background:radial-gradient(ellipse at 50% 0,#613668,transparent 75%),linear-gradient(110deg,#211525,#322037,#211525); border-color:#c28648; border-radius:5px; clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%); }
+        #nameContent::before, #nameContent::after { content:'✦'; position:absolute; top:27px; color:var(--orange); font-size:20px; }
+        #nameContent::before { left:20px; } #nameContent::after { right:20px; }
+        .event-name-wrapper { flex:0 1 auto; width:100%; min-height:34px; }
+        .event-name, .event-name-copy { font:bold 28px/1.1 Georgia,serif; letter-spacing:.5px; text-transform:none; color:#fff4df; }
+        #timerBox { width:218px; }
+        #timerBox .header-content { flex-direction:row; gap:12px; border-radius:9px; border-color:#779b65; background:radial-gradient(ellipse at 0 100%,#344927,#151e1b 75%); }
+        .header-zombie { width:30px; height:54px; flex-shrink:0; }
+        .header-zombie svg { width:100%; height:100%; }
+        #timerContent.visible .header-zombie { animation:float .7s ease-in-out infinite; }
+        .timer-text-group { display:flex; flex-direction:column; }
+        .timer-label-header { color:var(--green); font-size:9px; letter-spacing:3px; }
+        .timer-value { font:bold 29px/1.2 'Courier New',monospace; color:#e1ffc4; font-variant-numeric:tabular-nums; text-shadow:0 0 15px #a4e97740; }
+        .spooky-runner { position:absolute; left:-80px; top:9px; width:52px; height:52px; opacity:0; z-index:20; pointer-events:none; filter:drop-shadow(0 0 8px #c9bcff80); }
+        .spooky-runner svg { width:100%; height:100%; animation:float .65s ease-in-out infinite; }
+        .spooky-runner.running { animation:parade 5s linear both; }
+        .spooky-runner.witch.running { animation-duration:4s; } .spooky-runner.zombie.running { animation-duration:6s; } .spooky-runner.mummy.running { animation-duration:5.5s; }
+        @keyframes parade { 0% { left:-60px; opacity:0; } 8%,92% { opacity:1; } 100% { left:calc(100% - 40px); opacity:0; } }
+        .placeholder-box { background:linear-gradient(120deg,#36253e,#1b1724); border-radius:8px; }
+        .placeholder-box.timer { display:none; }
+        .placeholder-box.event,.placeholder-box.heat { width:100px; }
+        @media(max-width:850px) { #eventBox,#heatBox { width:68px; } #timerBox { width:165px; } .timer-value { font-size:23px; } .header-zombie { width:22px; } .event-name,.event-name-copy { font-size:19px; } #nameContent { padding:8px 24px; } #nameContent::before { left:7px; } #nameContent::after { right:7px; } }
 
-        body { font-family: var(--theme-font); }
-
-        /* Make both tombstones the same width */
-        #eventBox, #heatBox { width: 150px; }
-        .placeholder-box.event, .placeholder-box.heat { width: 150px; }
-
-        /* === Gravestone style for Event/Heat boxes === */
-        #eventBox .header-content,
-        #heatBox .header-content {
-            background: linear-gradient(180deg, #8a8a8a 0%, #6a6a6a 30%, #555 70%, #444 100%);
-            border: var(--border-width) solid #333;
-            border-radius: 45% 45% 4px 4px;
-            box-shadow:
-                inset 0 2px 4px rgba(255,255,255,0.2),
-                inset 0 -4px 0 rgba(0,0,0,0.4),
-                0 4px 12px var(--shadow-color),
-                0 0 15px rgba(0, 0, 0, 0.5);
-            flex-direction: column;
-            justify-content: center;
-            padding: 8px 15px;
-        }
-
-        /* Crack/weathering detail on gravestones */
-        #eventBox .header-content::before,
-        #heatBox .header-content::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 45% 45% 4px 4px;
-            background:
-                linear-gradient(160deg, transparent 40%, rgba(0,0,0,0.15) 41%, transparent 42%),
-                linear-gradient(200deg, transparent 55%, rgba(0,0,0,0.1) 56%, transparent 57%);
-            pointer-events: none;
-        }
-
-        /* === Coffin style for Event Name box === */
-        #nameBox .header-content {
-            background: linear-gradient(180deg, #4a2810 0%, #3a1e0a 30%, #2a1505 100%);
-            border: var(--border-width) solid #8B4513;
-            border-radius: var(--border-radius);
-            box-shadow:
-                inset 0 2px 4px rgba(255,255,255,0.1),
-                inset 0 -4px 0 rgba(0,0,0,0.5),
-                0 4px 12px var(--shadow-color);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Coffin wood grain texture */
-        #nameBox .header-content::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: repeating-linear-gradient(
-                90deg,
-                transparent 0px,
-                transparent 30px,
-                rgba(0,0,0,0.08) 30px,
-                rgba(0,0,0,0.08) 31px
-            );
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        #nameBox .header-content::after { display: none; }
-
-        /* === Timer box in header (LEFT side) === */
-        #timerBox {
-            visibility: visible !important;
-            overflow: visible;
-        }
-
-        #timerBox .header-content {
-            background: linear-gradient(180deg, var(--spooky-purple-light) 0%, var(--spooky-purple) 50%, #2d0630 100%);
-            border: var(--border-width) solid var(--spooky-orange);
-            border-radius: var(--border-radius);
-            box-shadow:
-                inset 0 -4px 0 rgba(0,0,0,0.4),
-                0 4px 12px var(--shadow-color),
-                0 0 15px rgba(255, 102, 0, 0.3);
-            justify-content: center;
-        }
-
-        .header-zombie {
-            flex-shrink: 0;
-            margin-right: 8px;
-            margin-top: -6px;
-        }
-
-        .header-zombie svg {
-            display: block;
-        }
-
-        /* Zombie walking animation when timer is visible */
-        #timerContent.visible .header-zombie {
-            animation: zombieWalk 0.5s steps(2) infinite;
-        }
-
-        @keyframes zombieWalk {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-2px) rotate(1deg); }
-        }
-
-        .timer-text-group {
-            display: flex;
-            align-items: center;
-        }
-
-        .timer-value {
-            font-size: 1.6rem;
-            color: var(--spooky-green);
-            text-shadow: 0 0 10px rgba(0, 204, 68, 0.6), 0 0 20px rgba(0, 204, 68, 0.3), 2px 2px 0 #000;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: 2px;
-        }
-
-        .timer-label-header {
-            font-size: 0.8rem;
-            color: var(--spooky-orange);
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            margin-right: 10px;
-        }
-
-        /* === Animations === */
-        .header-content.visible {
-            animation: spookyRise 0.6s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
-        }
-
-        .header-content.hiding {
-            animation: spookySink 0.4s ease-in forwards;
-        }
-
-        #eventBox .header-content.visible { animation-delay: 0s; }
-        #heatBox .header-content.visible { animation-delay: 0.1s; }
-        #nameBox .header-content.visible { animation-delay: 0.2s; }
-        #timerBox .header-content.visible { animation-delay: 0.3s; }
-
-        /* Coffin open/close for event name changes */
-        #nameBox .header-content.visible {
-            animation: coffinOpen 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
-        }
-
-        #nameBox .header-content.hiding {
-            animation: coffinClose 0.4s ease-in forwards;
-        }
-
-        @keyframes coffinOpen {
-            0% { transform: translateY(0) scaleY(0.1); opacity: 0; }
-            40% { transform: translateY(0) scaleY(1.08); opacity: 0.8; }
-            70% { transform: translateY(0) scaleY(0.97); opacity: 1; }
-            100% { transform: translateY(0) scaleY(1); opacity: 1; }
-        }
-
-        @keyframes coffinClose {
-            0% { transform: translateY(0) scaleY(1); opacity: 1; }
-            100% { transform: translateY(0) scaleY(0.1); opacity: 0; }
-        }
-
-        /* Gravestone rise from the ground */
-        #eventBox .header-content.exploding,
-        #heatBox .header-content.exploding {
-            animation: graveSink 0.3s ease-out forwards !important;
-        }
-
-        #eventBox .header-content.appearing,
-        #heatBox .header-content.appearing {
-            animation: graveRise 0.4s ease-out forwards !important;
-        }
-
-        #eventBox .header-content.appeared,
-        #heatBox .header-content.appeared {
-            animation: none !important;
-            transform: translateY(0) scale(1);
-            opacity: 1;
-        }
-
-        @keyframes graveSink {
-            0% { transform: translateY(0) scale(1); opacity: 1; }
-            100% { transform: translateY(30px) scale(0.8); opacity: 0; }
-        }
-
-        @keyframes graveRise {
-            0% { transform: translateY(40px) scale(0.8); opacity: 0; }
-            60% { transform: translateY(-5px) scale(1.03); opacity: 0.9; }
-            100% { transform: translateY(0) scale(1); opacity: 1; }
-        }
-
-        @keyframes spookyRise {
-            0% { transform: translateY(40px) scale(0.8); opacity: 0; }
-            70% { transform: translateY(-5px) scale(1.02); opacity: 1; }
-            100% { transform: translateY(0) scale(1); opacity: 1; }
-        }
-
-        @keyframes spookySink {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(40px); opacity: 0; }
-        }
-
-        .label {
-            font-size: 0.75rem;
-            color: #aaa;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-            margin-right: 0;
-            margin-bottom: 2px;
-            letter-spacing: 2px;
-        }
-
-        .value {
-            font-size: 1.8rem;
-            color: #ddd;
-            text-shadow: 0 0 5px rgba(255,255,255,0.2), 1px 1px 0 #000;
-            letter-spacing: 3px;
-        }
-
-        .event-name {
-            font-size: 1.5rem;
-            color: var(--spooky-yellow);
-            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5), 2px 2px 0 #000;
-            position: relative;
-            z-index: 1;
-        }
-
-        .event-name-copy {
-            font-size: 1.5rem;
-            color: var(--spooky-yellow);
-            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5), 2px 2px 0 #000;
-        }
-
-        /* Name box positioning context */
-        #nameBox { position: relative; z-index: 5; }
-        #nameBox .header-content { position: relative; z-index: 5; }
-
-        /* Halloween character runner */
-        .spooky-runner {
-            position: absolute;
-            width: 64px;
-            height: 64px;
-            bottom: 5px;
-            left: -70px;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 20;
-        }
-
-        .spooky-runner.running {
-            animation: spookyRun 5s linear forwards;
-        }
-
-        @keyframes spookyRun {
-            0% { left: -70px; opacity: 1; }
-            100% { left: calc(100% + 150px); opacity: 1; }
-        }
-
-        /* Ghost floats with bobbing motion */
-        .spooky-runner.ghost.running {
-            animation: spookyRun 5s linear forwards, ghostBob 0.6s ease-in-out infinite;
-        }
-
-        @keyframes ghostBob {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-12px); }
-        }
-
-        /* Witch flies across */
-        .spooky-runner.witch.running {
-            animation: spookyRun 4s linear forwards, witchFly 0.4s ease-in-out infinite;
-        }
-
-        @keyframes witchFly {
-            0%, 100% { transform: translateY(0) rotate(-5deg); }
-            50% { transform: translateY(-8px) rotate(5deg); }
-        }
-
-        /* Zombie lurches */
-        .spooky-runner.zombie.running {
-            animation: spookyRun 6s linear forwards, zombieLurch 0.8s ease-in-out infinite;
-        }
-
-        @keyframes zombieLurch {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-3px) rotate(3deg); }
-            75% { transform: translateY(-3px) rotate(-3deg); }
-        }
-
-        /* Mummy shuffles */
-        .spooky-runner.mummy.running {
-            animation: spookyRun 5.5s linear forwards, mummyShuffle 0.3s steps(2) infinite;
-        }
-
-        @keyframes mummyShuffle {
-            0% { transform: translateX(0); }
-            50% { transform: translateX(3px); }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration:1ms !important; animation-delay:0ms !important; animation-iteration-count:1 !important; transition-duration:1ms !important; }
+            .event-name-wrapper.scrolling .event-name-track { animation:none !important; }
+            .spooky-runner { display:none !important; }
         }
     </style>
 </head>
@@ -417,7 +147,7 @@
                     </svg>
                 </div>
                 <div class="timer-text-group">
-                    <span class="timer-label-header">TIME</span>
+                    <span class="timer-label-header">RACE TIME</span>
                     <span class="timer-value" id="runningTime"></span>
                 </div>
             </div>
@@ -532,7 +262,9 @@
 
         let runnerRunning = false;
         function triggerSpookyRun() {
-            if (runnerRunning) return;
+            // The demo coordinates full-screen cameos when the event number changes.
+            if (new URLSearchParams(location.search).get('preview') === '1') return;
+            if (runnerRunning || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
             const runner = document.getElementById('spookyRunner');
             const pick = Math.floor(Math.random() * characters.length);
             const character = characters[pick];
@@ -568,7 +300,7 @@
             _processAllHeaderData(jsonData);
         }
 
-        SwimOverlay.init({ onData: processAllHeaderDataWithRunner });
+        if (new URLSearchParams(location.search).get("preview") !== "1") SwimOverlay.init({ onData: processAllHeaderDataWithRunner });
     </script>
 </body>
 </html>

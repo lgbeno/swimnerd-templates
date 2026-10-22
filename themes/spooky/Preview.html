@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spooky Splash Spectacular • Theme Preview</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#100d19;color:#f9efde;font:14px 'Trebuchet MS',Arial,sans-serif}main{max-width:1440px;margin:auto;padding:38px 40px 28px}.eyebrow{font-size:10px;letter-spacing:4px;color:#cba5e8;text-transform:uppercase}.intro{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:26px}h1{font:normal clamp(30px,4vw,54px)/1.05 Georgia,serif;margin:10px 0}h1 em{color:#ffb45d;font-weight:normal}p{color:#b6a8c5;line-height:1.6;margin:10px 0 0}button,a{font:inherit}button{background:#ffb45d;color:#251729;border:0;border-radius:6px;padding:12px 20px;cursor:pointer;font-weight:bold}button.secondary{background:#ffffff08;border:1px solid #6f557e;color:#e7d9f1}button:hover{filter:brightness(1.15)}button:focus-visible,a:focus-visible{outline:2px solid #d8f8aa;outline-offset:4px}.controls{display:flex;gap:9px;flex-shrink:0;flex-wrap:wrap}.stage{position:relative;height:650px;overflow:hidden;border:1px solid #71537b;border-radius:14px;background:radial-gradient(ellipse at 80% 0,#5c3b6855,transparent 50%),linear-gradient(#1c172d,#14232c 60%,#101821);box-shadow:0 24px 80px #0006}.moon{position:absolute;right:120px;top:115px;width:125px;height:125px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff0c3,#dbbf8d);box-shadow:0 0 65px #d3a87530,inset -12px -5px #ad889333}.moon:after{content:'';position:absolute;inset:24px;border-radius:50%;background:radial-gradient(circle at 20% 60%,#bca27e55 0 10px,transparent 11px),radial-gradient(circle at 70% 20%,#bca27e55 0 16px,transparent 17px)}.pool{position:absolute;inset:110px 0 0;background:repeating-linear-gradient(0deg,transparent 0 57px,#bda0cb13 58px,#bc9bc620 60px,transparent 62px);transform:skewY(-7deg) scale(1.2);opacity:.7}.mist{position:absolute;inset:50% -30% -20%;background:radial-gradient(ellipse,#a991cb16,transparent 65%);animation:drift 15s ease-in-out infinite alternate;pointer-events:none}@keyframes drift{to{transform:translateX(15%)}}.bats{position:absolute;right:58px;top:126px;width:240px;height:150px;fill:#100f20}.scene-label{position:absolute;bottom:16px;left:24px;font-size:9px;letter-spacing:3px;color:#ab9db5}.stage iframe{position:absolute;border:0;background:transparent;width:100%;left:0}.stage #header{top:0;height:100px;z-index:3}.stage #lanes{top:106px;height:506px;z-index:2;padding-right:26px;padding-left:26px}.footer{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-top:18px;color:#ac9bb8;font-size:12px}.status{color:#d6f3b8}.status:before{content:'●';font-size:9px;margin-right:9px}a{color:#ffc37c;text-decoration:none}.detail{display:flex;gap:26px}.detail span{color:#e0d2e8} @media(max-width:800px){main{padding:22px 12px}.intro{align-items:start;flex-direction:column}.stage{height:590px}.stage #lanes{height:450px;padding:0}.footer{align-items:start;flex-direction:column}.detail{gap:16px}}@media(prefers-reduced-motion:reduce){.mist{animation:none}}
+/* Match the supplied OBS composition at a fixed broadcast resolution.
+   Scale the whole scene so iframe typography never changes with preview size. */
+.stage { height:auto; aspect-ratio:16/9; }
+.broadcast-scene { position:absolute; width:1920px; height:1080px; transform-origin:top left; }
+.stage #header { width:1280px; height:100px; transform:scale(1.5); transform-origin:top left; }
+.stage #lanes { left:auto; right:12px; top:auto; bottom:18px; width:720px; height:540px; padding:0; }
+.scene-label { bottom:24px; font-size:14px; }
+.pool { inset:160px 0 0; background:repeating-linear-gradient(0deg,transparent 0 102px,#bda0cb18 103px,#bc9bc630 106px,transparent 108px); }
+.moon { right:190px; top:205px; width:170px; height:170px; }
+.bats { right:135px; top:215px; }
+@media(max-width:800px) { .stage { height:auto; } .stage #lanes { height:540px; } }
+.stage #effects { inset:0; width:1920px; height:1080px; z-index:1; pointer-events:none; }
+.effects-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 18px; }
+.effects-controls label { color:#cba5e8; font-size:11px; letter-spacing:2px; margin-right:8px; }
+.effects-controls button { padding:8px 12px; font-size:12px; }
+/* Crop only the preview framing; retain the supplied photo unmodified.
+   The 18% zoom excludes its baked-in top banner and right lane badges. */
+.broadcast-scene { background: url('assets/pool-preview.png') left bottom / 118% auto no-repeat; }
+.pool, .moon, .bats, .mist { display:none; }
+.scene-label { background:#130e20c9; padding:8px 12px; border-radius:4px; color:#fff4df; }
+.effects-controls select { background:#21172c; color:#fff1d8; border:1px solid #745582; border-radius:6px; font:inherit; padding:8px 10px; }
+.effects-controls button:disabled, .effects-controls select:disabled { opacity:.45; cursor:default; }
+#cameo-status { color:#c7b4d4; font-size:11px; }
+</style>
+</head>
+<body><main>
+<div class="intro"><div><div class="eyebrow">ASC • Halloween meet collection</div><h1>Spooky Splash <em>Spectacular.</em></h1><p>A little moonlight. A little mischief. A whole lot of fast swimming.</p></div><div class="controls"><button class="secondary" id="next-event">Next event</button><button class="secondary" id="lineup">Next heat</button><button id="race">Run a demo race ↗</button></div></div>
+<div class="effects-controls" aria-label="Full-screen animation controls"><label for="effect-select">15 SPOOKY CAMEOS</label><select id="effect-select" disabled aria-label="Choose a cameo"></select><button class="secondary" id="play-effect" disabled>Play selected</button><button class="secondary" id="effects-toggle" disabled>On new event</button><span id="cameo-status" role="status">New event → shuffled cameo</span></div>
+<div class="stage"><div class="broadcast-scene"><div class="pool"></div><div class="moon"></div><svg class="bats" viewBox="0 0 240 150" aria-hidden="true"><path d="M15 35Q28 31 34 18L41 30L48 18Q54 31 69 35Q55 37 52 48L42 42L32 48Q28 37 15 35Z"/><path d="M125 58Q142 53 148 39L155 49L162 39Q172 54 187 58Q170 59 167 71L156 63L145 71Q139 59 125 58Z"/><path d="M80 109Q91 105 94 96L99 104L104 96Q108 105 119 109L107 113L100 110L91 115Z"/></svg><div class="mist"></div><iframe id="header" src="HeaderOverlay.html?preview=1&v=event-cameos" title="Spooky event header"></iframe><iframe id="lanes" src="LaneOverlay.html?preview=1&v=event-cameos" title="Spooky lane graphics"></iframe><iframe id="effects" src="EffectsOverlay.html?autoplay=0&v=cast-15" title="Full-screen Halloween animations"></iframe><div class="scene-label">1920 × 1080 / OBS COMPOSITION / POOL PHOTO</div></div></div>
+<div class="footer"><div class="status" id="status" role="status">On deck · Heat 1</div><div class="detail"><div><span>08</span> pumpkin lanes</div><div><span>20s</span> demo race</div><a href="../../Simulator.html">Open full simulator ↗</a></div></div>
+<p style="font-size:11px">Your pool photo is cropped to hide the original scoreboard graphics. Use Next event for a shuffled cameo (all 15 play before repeats); Next heat and race finishes do not trigger animations. The photo is preview-only; all OBS overlays remain transparent.</p>
+</main><script>
+const stage=document.querySelector('.stage');
+const scene=document.querySelector('.broadcast-scene');
+new ResizeObserver(([entry])=>{scene.style.transform=`scale(${entry.contentRect.width/1920})`;}).observe(stage);
+const header=document.getElementById('header'),lanes=document.getElementById('lanes');
+const effects=document.getElementById('effects');
+let effectsReady=false, eventIntro=false;
+function clearEventEffects() {
+    eventIntro=false;
+    if(effectsReady) effects.contentWindow.SpookyEffects.stop();
+    document.querySelectorAll('#effect-select, #play-effect, #effects-toggle').forEach(button=>button.disabled=true);
+    document.getElementById('effects-toggle').textContent='On new event';
+    document.getElementById('cameo-status').textContent='New event → shuffled cameo';
+}
+function beginEventEffects() {
+    if(!effectsReady) return;
+    eventIntro=true;
+    const controller=effects.contentWindow.SpookyEffects;
+    controller.stop();
+    const selected=controller.playNext();
+    document.getElementById('effect-select').value=selected;
+    document.getElementById('cameo-status').textContent=controller.catalog.find(item=>item.id===selected).name;
+    document.querySelectorAll('#effect-select, #play-effect, #effects-toggle').forEach(button=>button.disabled=false);
+    document.getElementById('effects-toggle').textContent='Stop effects';
+}
+effects.addEventListener('load',()=>{
+    effectsReady=true;
+    const select=document.getElementById('effect-select');
+    select.replaceChildren();
+    for(const item of effects.contentWindow.SpookyEffects.catalog) {
+        const option=document.createElement('option');
+        option.value=item.id;
+        option.textContent=item.name;
+        select.append(option);
+    }
+    clearEventEffects();
+});
+document.getElementById('play-effect').addEventListener('click',()=>{
+    if(!effectsReady || !eventIntro) return;
+    const controller=effects.contentWindow.SpookyEffects;
+    const selected=document.getElementById('effect-select').value;
+    controller.stop();
+    controller.play(selected);
+    document.getElementById('cameo-status').textContent=controller.catalog.find(item=>item.id===selected).name+' · audition';
+});
+document.getElementById('effects-toggle').addEventListener('click',clearEventEffects);
+const names=['Avery Morgan','Oliver Chen','Isabella Reyes','Noah Williams','Sophia Patel','Liam Anderson','Emma Thompson','Lucas Bennett'];
+const teams=['ASC','WAVE','TIDE','ASC','NOVA','WAVE','TIDE','NOVA'];
+const places=[6,4,2,1,3,5,7,8];
+let eventNumber=12,heat=0,tick=null,start=0;
+function data(){return {swimming:{EventNumber:String(eventNumber),HeatNumber:String(heat),EventName:'Girls 11–12 · 100 Yard Freestyle',RunningTime:'0:00.0',ScoreboardCurrentState:0,LaneAthleteTeam:names.map((name,i)=>({LaneNumber:String(i+1),AthleteName:name,Team:teams[i],Place:'',SplitTime:'',FinalTime:''}))}};}
+let current;
+function send(){for(const f of [header,lanes])f.contentDocument.getElementById('placeholder').classList.add('hidden');header.contentWindow.processAllHeaderDataWithRunner(current);lanes.contentWindow.processSpookyLaneData(current);}
+function showDemoLineup(){clearEventEffects();clearInterval(tick);heat++;current=data();send();document.getElementById('status').textContent='On deck · Event '+eventNumber+' · Heat '+heat;document.getElementById('race').textContent='Run a demo race ↗';}
+function runDemoRace(){clearEventEffects();clearInterval(tick);current=data();current.swimming.ScoreboardCurrentState=3;start=performance.now();send();document.getElementById('race').textContent='Restart race ↗';tick=setInterval(()=>{const sec=(performance.now()-start)/1000;current.swimming.RunningTime='0:'+sec.toFixed(1).padStart(4,'0');current.swimming.LaneAthleteTeam.forEach((lane,i)=>{if(sec>5+i*.15)lane.SplitTime=(24.2+i*.31).toFixed(2);if(sec>12+places[i]*.8){lane.Place=String(places[i]);lane.FinalTime='0:'+(51.18+places[i]*.64).toFixed(2);}});send();document.getElementById('status').textContent='In the water · Event '+eventNumber+' · Heat '+heat;if(sec>=20){clearInterval(tick);current.swimming.ScoreboardCurrentState=0;send();document.getElementById('status').textContent='Final results · Event '+eventNumber+' · Heat '+heat;document.getElementById('race').textContent='Race again ↗';}},100);}
+function nextEvent(){eventNumber++;heat=0;showDemoLineup();beginEventEffects();}
+Promise.all([header,lanes,effects].map(f=>new Promise(resolve=>f.addEventListener('load',resolve,{once:true})))).then(()=>{showDemoLineup();document.getElementById('lineup').addEventListener('click',showDemoLineup);document.getElementById('next-event').addEventListener('click',nextEvent);document.getElementById('race').addEventListener('click',runDemoRace);});
+</script></body></html>

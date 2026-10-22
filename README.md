@@ -40,7 +40,7 @@ Three themes are included:
 
 - **Default** (`themes/default/`) -- Clean, professional look with semi-transparent dark backgrounds, suitable for broadcast.
 - **Mario** (`themes/mario/`) -- Retro pixel-art style using the Press Start 2P font with pipe animations and Mario character effects.
-- **Spooky** (`themes/spooky/`) -- Halloween-themed with eerie animations and effects.
+- **Spooky** (`themes/spooky/`) -- Spooky Splash Spectacular: moonlit coffin banner, carved pumpkin lane markers, floating ghosts, podium accents, and a zombie race clock. [Open the interactive preview](themes/spooky/Preview.html), then run a 20-second demo through lineup, splits, and final results. Graphics use local SVG/CSS and system fonts, with reduced-motion support; OBS backgrounds remain transparent.
 
 Switch themes via the dropdown in the Simulator. See `themes/THEME_SPEC.md` for the full theme authoring guide.
 
@@ -176,3 +176,11 @@ The system broadcasts JSON in this structure:
 │   └── websocket-server.py
 └── README.md
 ```
+
+### Full-screen Spooky effects for OBS
+
+Add `themes/spooky/EffectsOverlay.html` as a separate **Browser Source**, sized to your canvas (for example, **1920 × 1080**), above the camera. Place your scoreboard sources above it to keep race information in front of the characters. The source has a transparent background and no controls or audio.
+
+The cast includes 15 cameos: ghosts, Frankenstein, a spider web, bats, a witch, tumbling pumpkins, a mummy, a black cat, a cauldron, a dancing skeleton, swimming ghosts, autumn leaves, candy, peeking monsters, and a pumpkin portal. Each lasts up to 10 seconds. A shuffled bag plays every cameo once before repeating and avoids an immediate repeat between rounds. The standalone source rotates every 20 seconds, with quiet gaps between appearances. It runs independently of race data. Enable OBS’s **Shutdown source when not visible** if you want each activation to restart the animation cycle. Reduced-motion preferences suppress automatic animation.
+
+In the [Spooky preview](themes/spooky/Preview.html), **Next event** changes the event number and triggers one cameo. Heat changes and race finishes do not trigger effects. Starting a heat or race clears any cameo. During the new-event introduction, the selector and **Play selected** button can audition any of the 15 cameos. Auditions do not consume the shuffled event rotation. The standalone OBS source still cycles independently; use `?autoplay=0` when a parent page will control it.
