@@ -261,10 +261,11 @@
         ];
 
         let runnerRunning = false;
+        let runnerTimerIdle = false;
         function triggerSpookyRun() {
             // The demo coordinates full-screen cameos when the event number changes.
             if (new URLSearchParams(location.search).get('preview') === '1') return;
-            if (runnerRunning || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            if (!runnerTimerIdle || runnerRunning || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
             const runner = document.getElementById('spookyRunner');
             const pick = Math.floor(Math.random() * characters.length);
             const character = characters[pick];
@@ -286,17 +287,14 @@
             }, duration);
         }
 
-        // Trigger runner on event changes AND on first event appearance
-        let firstEventSeen = false;
+        // Only actual event changes may trigger a runner, never initial connection.
         SwimOverlay.onEventChange = triggerSpookyRun;
 
         const _processAllHeaderData = processAllHeaderData;
         function processAllHeaderDataWithRunner(jsonData) {
-            const eventNum = jsonData.swimming.EventNumber;
-            if (eventNum && !firstEventSeen) {
-                firstEventSeen = true;
-                triggerSpookyRun();
-            }
+            const state = jsonData.swimming.ScoreboardCurrentState;
+            runnerTimerIdle = state !== null && state !== undefined && String(state).trim() !== '' &&
+                Number.isFinite(Number(state)) && Number(state) !== 3;
             _processAllHeaderData(jsonData);
         }
 

@@ -174,6 +174,7 @@
     <symbol id="monster-art" viewBox="0 0 180 200"><g class="monster-face"><path d="M39 57L23 19L61 38M124 40L157 18L145 64" fill="#f0d7a9" stroke="#6e547f" stroke-width="4"/><path d="M20 200V86Q17 31 87 31Q158 27 160 86V200" fill="currentColor" stroke="#684e7c" stroke-width="4"/><path d="M62 134Q92 158 121 134L110 163L91 170L74 161Z" fill="#43304b"/><path d="M74 143L86 147L77 158M101 147L113 142L109 156" fill="#fff3d2"/></g><g fill="#fff4c4"><ellipse cx="62" cy="89" rx="20" ry="25"/><ellipse cx="117" cy="89" rx="20" ry="25"/></g><g fill="#42304e"><ellipse cx="68" cy="94" rx="8" ry="12"/><ellipse cx="111" cy="94" rx="8" ry="12"/></g></symbol>
 </defs></svg>
 <div id="stage" aria-hidden="true"></div>
+<script src="../../js/overlay-core.js"></script>
 <script>
 (() => {
     const stage = document.getElementById('stage');
@@ -188,6 +189,7 @@
     const sequence = catalog.map(item => item.id);
     let bag = [], lastPick;
     function playNext() {
+        if (!canStart()) return null;
         if (!bag.length) {
             bag = [...sequence];
             for (let i = bag.length - 1; i > 0; i--) {
@@ -201,8 +203,26 @@
         play(lastPick);
         return lastPick;
     }
-    let cleanup, cycle;
-    let enabled = new URLSearchParams(location.search).get('autoplay') !== '0';
+    let cleanup, active = false;
+    let lastEvent = null, timerIdle = false;
+    function canStart() {
+        return timerIdle && !active && !document.hidden && !motion.matches;
+    }
+    function processData(data) {
+        const swimming = data && data.swimming;
+        if (!swimming) { timerIdle = false; return null; }
+        const state = swimming.ScoreboardCurrentState;
+        // Unknown state fails closed; state 3 is the timer-running state.
+        timerIdle = state !== null && state !== undefined && String(state).trim() !== '' &&
+            Number.isFinite(Number(state)) && Number(state) !== 3;
+        const rawEvent = String(swimming.EventNumber ?? '').trim();
+        if (!rawEvent) return null;
+        const event = /^\d+$/.test(rawEvent) ? String(Number(rawEvent)) : rawEvent;
+        const changed = lastEvent !== null && event !== lastEvent;
+        lastEvent = event;
+        // Consume blocked transitions. Do not queue a surprise cameo after a race.
+        return changed ? playNext() : null;
+    }
     const views = { 'ghost-art': '0 0 180 220', 'frank-art': '0 0 220 290', 'bat-art': '0 0 140 80', 'pumpkin-art':'0 0 180 170', 'witch-art':'0 0 300 220', 'mummy-art':'-90 0 260 250', 'cat-art':'0 0 240 170', 'cauldron-art':'0 0 220 200', 'skeleton-art':'0 0 210 300', 'swim-ghost-art':'0 0 180 220', 'leaf-art':'0 0 90 100', 'candy-art':'0 0 100 70', 'corn-art':'0 0 80 100', 'monster-art':'0 0 180 200' };
     const art = id => `<svg viewBox="${views[id]}" aria-hidden="true"><use href="#${id}"/></svg>`;
     function add(className, content, styles = {}) {
@@ -214,7 +234,8 @@
         return element;
     }
     function play(type) {
-        if (!sequence.includes(type)) return;
+        if (!sequence.includes(type) || !canStart()) return false;
+        active = true;
         clearTimeout(cleanup);
         stage.replaceChildren(); // One vignette at a time; never accumulate particles.
         if (type === 'ghosts') {
@@ -269,25 +290,20 @@
         } else if (type === 'portal') {
             add('portal',`<div class="portal-ring"></div><div class="portal-pumpkin"><svg viewBox="-35 0 250 190"><path d="M22 117L-14 135" stroke="#96b775" stroke-width="10" stroke-linecap="round"/><g class="pumpkin-wave"><path d="M155 112L194 97L199 71" stroke="#96b775" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M198 77L187 63M200 77L207 57" stroke="#badd95" stroke-width="7" stroke-linecap="round"/></g><use href="#pumpkin-art" width="180" height="170"/></svg></div>`);
         }
-        cleanup = setTimeout(() => stage.replaceChildren(), motion.matches ? 4500 : 10000);
+        cleanup = setTimeout(() => { stage.replaceChildren(); active = false; }, 10000);
+        return true;
     }
     function stop() {
-        enabled = false;
-        clearInterval(cycle);
         clearTimeout(cleanup);
         stage.replaceChildren();
+        active = false;
     }
-    function start() {
-        stop();
-        enabled = true;
-        if (motion.matches || document.hidden) return;
-        playNext();
-        cycle = setInterval(playNext, 20000);
+    // Every entry point uses the same interlock. No periodic or visibility autoplay.
+    window.SpookyEffects = { play, playNext, stop, start: playNext, processData, catalog };
+    const query = new URLSearchParams(location.search);
+    if (query.get('preview') !== '1' && query.get('autoplay') !== '0') {
+        SwimOverlay.init({ onData: processData });
     }
-    window.SpookyEffects = { play, playNext, stop, start, catalog };
-    motion.addEventListener('change', () => { if (enabled) start(); });
-    document.addEventListener('visibilitychange', () => { if (enabled) start(); });
-    if (enabled) start();
 })();
 </script>
 </body>

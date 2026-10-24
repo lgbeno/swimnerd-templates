@@ -33,7 +33,7 @@
 <body><main>
 <div class="intro"><div><div class="eyebrow">ASC • Halloween meet collection</div><h1>Spooky Splash <em>Spectacular.</em></h1><p>A little moonlight. A little mischief. A whole lot of fast swimming.</p></div><div class="controls"><button class="secondary" id="next-event">Next event</button><button class="secondary" id="lineup">Next heat</button><button id="race">Run a demo race ↗</button></div></div>
 <div class="effects-controls" aria-label="Full-screen animation controls"><label for="effect-select">15 SPOOKY CAMEOS</label><select id="effect-select" disabled aria-label="Choose a cameo"></select><button class="secondary" id="play-effect" disabled>Play selected</button><button class="secondary" id="effects-toggle" disabled>On new event</button><span id="cameo-status" role="status">New event → shuffled cameo</span></div>
-<div class="stage"><div class="broadcast-scene"><div class="pool"></div><div class="moon"></div><svg class="bats" viewBox="0 0 240 150" aria-hidden="true"><path d="M15 35Q28 31 34 18L41 30L48 18Q54 31 69 35Q55 37 52 48L42 42L32 48Q28 37 15 35Z"/><path d="M125 58Q142 53 148 39L155 49L162 39Q172 54 187 58Q170 59 167 71L156 63L145 71Q139 59 125 58Z"/><path d="M80 109Q91 105 94 96L99 104L104 96Q108 105 119 109L107 113L100 110L91 115Z"/></svg><div class="mist"></div><iframe id="header" src="HeaderOverlay.html?preview=1&v=event-cameos" title="Spooky event header"></iframe><iframe id="lanes" src="LaneOverlay.html?preview=1&v=event-cameos" title="Spooky lane graphics"></iframe><iframe id="effects" src="EffectsOverlay.html?autoplay=0&v=cast-15" title="Full-screen Halloween animations"></iframe><div class="scene-label">1920 × 1080 / OBS COMPOSITION / POOL PHOTO</div></div></div>
+<div class="stage"><div class="broadcast-scene"><div class="pool"></div><div class="moon"></div><svg class="bats" viewBox="0 0 240 150" aria-hidden="true"><path d="M15 35Q28 31 34 18L41 30L48 18Q54 31 69 35Q55 37 52 48L42 42L32 48Q28 37 15 35Z"/><path d="M125 58Q142 53 148 39L155 49L162 39Q172 54 187 58Q170 59 167 71L156 63L145 71Q139 59 125 58Z"/><path d="M80 109Q91 105 94 96L99 104L104 96Q108 105 119 109L107 113L100 110L91 115Z"/></svg><div class="mist"></div><iframe id="header" src="HeaderOverlay.html?preview=1&v=event-cameos" title="Spooky event header"></iframe><iframe id="lanes" src="LaneOverlay.html?preview=1&v=event-cameos" title="Spooky lane graphics"></iframe><iframe id="effects" src="EffectsOverlay.html?preview=1&v=event-interlock" title="Full-screen Halloween animations"></iframe><div class="scene-label">1920 × 1080 / OBS COMPOSITION / POOL PHOTO</div></div></div>
 <div class="footer"><div class="status" id="status" role="status">On deck · Heat 1</div><div class="detail"><div><span>08</span> pumpkin lanes</div><div><span>20s</span> demo race</div><a href="../../Simulator.html">Open full simulator ↗</a></div></div>
 <p style="font-size:11px">Your pool photo is cropped to hide the original scoreboard graphics. Use Next event for a shuffled cameo (all 15 play before repeats); Next heat and race finishes do not trigger animations. The photo is preview-only; all OBS overlays remain transparent.</p>
 </main><script>
@@ -43,19 +43,18 @@ new ResizeObserver(([entry])=>{scene.style.transform=`scale(${entry.contentRect.
 const header=document.getElementById('header'),lanes=document.getElementById('lanes');
 const effects=document.getElementById('effects');
 let effectsReady=false, eventIntro=false;
-function clearEventEffects() {
+function clearEventEffects(stopAnimation=false) {
     eventIntro=false;
-    if(effectsReady) effects.contentWindow.SpookyEffects.stop();
+    if(stopAnimation && effectsReady) effects.contentWindow.SpookyEffects.stop();
     document.querySelectorAll('#effect-select, #play-effect, #effects-toggle').forEach(button=>button.disabled=true);
     document.getElementById('effects-toggle').textContent='On new event';
     document.getElementById('cameo-status').textContent='New event → shuffled cameo';
 }
-function beginEventEffects() {
-    if(!effectsReady) return;
+function beginEventEffects(selected) {
+    if(!effectsReady || !selected) return;
     eventIntro=true;
     const controller=effects.contentWindow.SpookyEffects;
-    controller.stop();
-    const selected=controller.playNext();
+
     document.getElementById('effect-select').value=selected;
     document.getElementById('cameo-status').textContent=controller.catalog.find(item=>item.id===selected).name;
     document.querySelectorAll('#effect-select, #play-effect, #effects-toggle').forEach(button=>button.disabled=false);
@@ -78,19 +77,18 @@ document.getElementById('play-effect').addEventListener('click',()=>{
     const controller=effects.contentWindow.SpookyEffects;
     const selected=document.getElementById('effect-select').value;
     controller.stop();
-    controller.play(selected);
-    document.getElementById('cameo-status').textContent=controller.catalog.find(item=>item.id===selected).name+' · audition';
+    if(controller.play(selected)) document.getElementById('cameo-status').textContent=controller.catalog.find(item=>item.id===selected).name+' · audition';
 });
-document.getElementById('effects-toggle').addEventListener('click',clearEventEffects);
+document.getElementById('effects-toggle').addEventListener('click',()=>clearEventEffects(true));
 const names=['Avery Morgan','Oliver Chen','Isabella Reyes','Noah Williams','Sophia Patel','Liam Anderson','Emma Thompson','Lucas Bennett'];
 const teams=['ASC','WAVE','TIDE','ASC','NOVA','WAVE','TIDE','NOVA'];
 const places=[6,4,2,1,3,5,7,8];
 let eventNumber=12,heat=0,tick=null,start=0;
 function data(){return {swimming:{EventNumber:String(eventNumber),HeatNumber:String(heat),EventName:'Girls 11–12 · 100 Yard Freestyle',RunningTime:'0:00.0',ScoreboardCurrentState:0,LaneAthleteTeam:names.map((name,i)=>({LaneNumber:String(i+1),AthleteName:name,Team:teams[i],Place:'',SplitTime:'',FinalTime:''}))}};}
 let current;
-function send(){for(const f of [header,lanes])f.contentDocument.getElementById('placeholder').classList.add('hidden');header.contentWindow.processAllHeaderDataWithRunner(current);lanes.contentWindow.processSpookyLaneData(current);}
+function send(){for(const f of [header,lanes])f.contentDocument.getElementById('placeholder').classList.add('hidden');header.contentWindow.processAllHeaderDataWithRunner(current);lanes.contentWindow.processSpookyLaneData(current);if(effectsReady){const selected=effects.contentWindow.SpookyEffects.processData(current);if(selected)beginEventEffects(selected);}}
 function showDemoLineup(){clearEventEffects();clearInterval(tick);heat++;current=data();send();document.getElementById('status').textContent='On deck · Event '+eventNumber+' · Heat '+heat;document.getElementById('race').textContent='Run a demo race ↗';}
 function runDemoRace(){clearEventEffects();clearInterval(tick);current=data();current.swimming.ScoreboardCurrentState=3;start=performance.now();send();document.getElementById('race').textContent='Restart race ↗';tick=setInterval(()=>{const sec=(performance.now()-start)/1000;current.swimming.RunningTime='0:'+sec.toFixed(1).padStart(4,'0');current.swimming.LaneAthleteTeam.forEach((lane,i)=>{if(sec>5+i*.15)lane.SplitTime=(24.2+i*.31).toFixed(2);if(sec>12+places[i]*.8){lane.Place=String(places[i]);lane.FinalTime='0:'+(51.18+places[i]*.64).toFixed(2);}});send();document.getElementById('status').textContent='In the water · Event '+eventNumber+' · Heat '+heat;if(sec>=20){clearInterval(tick);current.swimming.ScoreboardCurrentState=0;send();document.getElementById('status').textContent='Final results · Event '+eventNumber+' · Heat '+heat;document.getElementById('race').textContent='Race again ↗';}},100);}
-function nextEvent(){eventNumber++;heat=0;showDemoLineup();beginEventEffects();}
+function nextEvent(){eventNumber++;heat=0;showDemoLineup();}
 Promise.all([header,lanes,effects].map(f=>new Promise(resolve=>f.addEventListener('load',resolve,{once:true})))).then(()=>{showDemoLineup();document.getElementById('lineup').addEventListener('click',showDemoLineup);document.getElementById('next-event').addEventListener('click',nextEvent);document.getElementById('race').addEventListener('click',runDemoRace);});
 </script></body></html>
