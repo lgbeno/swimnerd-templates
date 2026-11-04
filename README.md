@@ -9,6 +9,7 @@ A streaming overlay system for competitive swimming meets. Displays real-time ra
 - [Lane Text Template](https://lgbeno.github.io/swimnerd-templates/themes/default/LaneOverlay.html)
 - [Timer Template](https://lgbeno.github.io/swimnerd-templates/themes/default/TimerOverlay.html)
 - [Data Logger](https://lgbeno.github.io/swimnerd-templates/DataLogger.html)
+- [CTS6 Serial Decoder](CTS6.html) — capture replay, Meet Manager roster matching, and read-only Web Serial input.
 
 ## Overview
 
@@ -184,3 +185,9 @@ Add `themes/spooky/EffectsOverlay.html` as a separate **Browser Source**, sized 
 The cast includes 15 cameos: ghosts, Frankenstein, a spider web, bats, a witch, tumbling pumpkins, a mummy, a black cat, a cauldron, a dancing skeleton, swimming ghosts, autumn leaves, candy, peeking monsters, and a pumpkin portal. Each lasts up to 10 seconds. A shuffled bag plays every cameo once before repeating and avoids an immediate repeat between rounds. The OBS source listens to the same BroadcastChannel/WebSocket scoreboard feed as the other overlays. Its first event establishes a baseline; only a later event-number change can start a cameo. State 3 (timer running), unknown state, hidden sources, and reduced-motion preferences block new animations. An animation already playing finishes naturally when the timer starts. Blocked event changes are discarded, never queued for the finish. Heat changes, repeated data, and visibility changes do not start animations.
 
 In the [Spooky preview](themes/spooky/Preview.html), **Next event** changes the event number and triggers one cameo. Heat changes and race finishes do not trigger effects. Starting a heat or race disables new auditions but lets an existing cameo finish. During the new-event introduction, the selector and **Play selected** button can audition any of the 15 cameos. Auditions do not consume the shuffled event rotation. The preview uses the same event/timer interlock as the live source. Use `?preview=1` (or legacy `?autoplay=0`) only when a parent page supplies scoreboard data through `SpookyEffects.processData`.
+
+## CTS6 serial decoder
+
+Open [CTS6.html](CTS6.html) through a local HTTP server to replay a CTS6 capture or connect a legacy scoreboard serial feed. Import an extracted meet folder containing `CTS6_Capture.csv` and Meet Manager `.scb` files. The page provides playback, seeking, lane/time inspection, raw channels, JSON download, and optional publishing to the existing overlays. Video features are not included.
+
+Live Web Serial requires desktop Chrome/Edge and localhost or HTTPS. Finish classification and reset-state inference are experimental and disabled in overlay output by default; actual CTS6 hardware remains to be validated. See [decoder documentation](js/cts6/README.md) for supported fields, settings, limitations, and tests.
