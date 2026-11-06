@@ -59,7 +59,7 @@
                         this.readErrors++;
                         const now = performance.now(); recent = recent.filter(t => now - t < 2000); recent.push(now);
                         if (e.name === 'NetworkError') throw e;
-                        if (recent.length > 20) throw new Error('Too many serial errors (' + (e.message || e.name) + '). Check the baud rate and parity.');
+                        if (recent.length > 20) throw new Error('Too many serial errors (' + (e.message || e.name) + '). Check the port settings.');
                     } finally {
                         try { this.reader.releaseLock(); } catch (e) { /* stream already released */ }
                         this.reader = null;
@@ -252,6 +252,13 @@
 
     // ---- display -------------------------------------------------------------------------
     const serialSettings = prefix => ({ baudRate: Number($(prefix + 'Baud').value), dataBits: 8, stopBits: 1, parity: $(prefix + 'Parity').value, flowControl: 'none' });
+    // What each link sends. The page uses these unless the port settings dialog says otherwise.
+    const DEFAULTS = { timer: { baud: '9600', parity: 'even' }, genser: { baud: '9600', parity: 'none' } };
+    const customised = prefix => {
+        const baud = $(prefix + 'Baud').value, parity = $(prefix + 'Parity').value;
+        return baud === DEFAULTS[prefix].baud && parity === DEFAULTS[prefix].parity ? '' : ` · port set to ${baud} 8${parity[0].toUpperCase()}1`;
+    };
+    const withPort = (text, prefix) => customised(prefix) ? text.replace(/\.$/, '') + customised(prefix) : text;
     const el = (tag, text, className) => { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; };
     const clockTime = at => at ? new Date(at).toLocaleTimeString() : '';
     /** The event data viewer: every heat held for one event, where it came from, and what changed lately. */
@@ -320,16 +327,16 @@
         $('timerDisconnect').disabled = !timer.connected || timer.closing;
         $('genserConnect').disabled = !support || genser.connected || genser.opening;
         $('genserDisconnect').disabled = !genser.connected || genser.closing;
-        ['timerBaud', 'timerParity'].forEach(id => $(id).disabled = timer.connected || timer.opening);
-        ['genserBaud', 'genserParity'].forEach(id => $(id).disabled = genser.connected || genser.opening);
+        $('timerSettings').disabled = timer.connected || timer.opening;
+        $('genserSettings').disabled = genser.connected || genser.opening;
         if (support) {
-            $('timerStatus').textContent = timer.connected
-                ? (latest.bytes ? (latest.blocks ? 'Connected · receiving' : 'Connected · bytes arriving but nothing decodes. Check baud and parity.') : 'Connected · no data yet')
-                : 'Not connected. The console sends 9600 baud with even parity.';
-            $('genserStatus').textContent = !genser.connected ? 'Not connected. Tap the line that Meet Manager transmits on.'
+            $('timerStatus').textContent = withPort(timer.connected
+                ? (latest.bytes ? (latest.blocks ? 'Connected · receiving' : 'Connected · bytes arriving but nothing decodes. Is this the console’s line?') : 'Connected · no data yet')
+                : 'Not connected.', 'timer');
+            $('genserStatus').textContent = withPort(!genser.connected ? 'Not connected. Tap the line that Meet Manager transmits on.'
                 : parser.records ? 'Connected · receiving start lists'
                 : parser.requests ? 'Connected · seeing requests but no start lists. This is the scoreboard computer’s transmit line; move the tap to Meet Manager’s.'
-                : parser.bytes ? 'Connected · bytes arriving but no start list yet' : 'Connected · no data yet. Meet Manager only sends when asked.';
+                : parser.bytes ? 'Connected · bytes arriving but no start list yet' : 'Connected · no data yet. Meet Manager only sends when asked.', 'genser');
         }
         $('sourceStatus').textContent = (timer.connected ? 'Timer connected' : replay ? (replay.playing ? 'Timer: capture playing' : 'Timer: capture paused') : 'Timer not connected') + ' · '
             + (rosters.heats ? `Event data: ${rosters.heats} heats` : 'No event data') + (genser.connected ? ' · serial connected' : '');
@@ -373,6 +380,12 @@
     $('timerDisconnect').onclick = () => timer.disconnect();
     $('genserConnect').onclick = () => genser.connect(serialSettings('genser'), timer);
     $('genserDisconnect').onclick = () => genser.disconnect();
+    for (const prefix of ['timer', 'genser']) {
+        $(prefix + 'Settings').onclick = () => $(prefix + 'Dialog').showModal();
+        $(prefix + 'Defaults').onclick = () => { $(prefix + 'Baud').value = DEFAULTS[prefix].baud; $(prefix + 'Parity').value = DEFAULTS[prefix].parity; saveSettings(); render(); };
+        $(prefix + 'Dialog').onclose = render;
+        [$(prefix + 'Baud'), $(prefix + 'Parity')].forEach(s => s.addEventListener('change', render));
+    }
     $('timerFile').onchange = e => { const file = e.target.files[0]; e.target.value = ''; if (file) loadTimerCapture(file); };
     $('timerPlay').onclick = () => {
         if (!replay) return;

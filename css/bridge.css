@@ -22,3 +22,5 @@ h3{font-size:13px;margin:22px 0 4px;color:#edf4fb;letter-spacing:.3px}
 .changes li{padding:6px 0;border-bottom:1px solid var(--line)}
 .changes li:last-child{border-bottom:0}
 .changes .replaced,.changes .removed{color:#ffd28a}
+.quiet{background:none;border-color:transparent;color:var(--muted);padding:11px 8px}.quiet:hover{color:#edf4fb}
+dialog{background:var(--card);color:#edf4fb;border:1px solid var(--line);border-radius:12px;padding:24px;max-width:480px}dialog::backdrop{background:rgba(0,0,0,.6)}dialog h3{margin-top:0}
