@@ -45,6 +45,13 @@ var SwimOverlay = (function () {
             const channel = new BroadcastChannel('swimnerd-scoreboard');
             channel.onmessage = (e) => _handleMessage(e.data);
 
+            // OBS Browser Source: data pushed through OBS's own WebSocket server
+            // (obs-browser vendor request "emit_event") arrives as a window event.
+            window.addEventListener('swimnerd-scoreboard', (e) => {
+                const data = typeof e.detail === 'string' ? JSON.parse(e.detail) : e.detail;
+                if (data && data.swimming) _handleMessage(data);
+            });
+
             // WebSocket with auto-reconnect
             _connectWebSocket();
         },

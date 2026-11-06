@@ -1,0 +1,7 @@
+/* Additions to cts6.css for SerialBridge.html. */
+input[type=password],input[type=text]{background:#0c1620;color:#edf4fb;border:1px solid #3a4f63;border-radius:5px;padding:7px;font:inherit}
+input[type=url]{min-width:210px}
+h3{font-size:13px;margin:22px 0 4px;color:#edf4fb;letter-spacing:.3px}
+.status-ok{color:var(--accent)}
+.status-warn{color:#ffd28a}
+.rule{border:0;border-top:1px solid var(--line);margin:20px 0}
