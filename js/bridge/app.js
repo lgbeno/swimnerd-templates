@@ -1,7 +1,9 @@
-/* Serial bridge controller: two Web Serial ports in, one overlay feed out.
+/* Serial bridge controller: timer stream and event data in, one overlay feed out.
  *
  *   timer port        -> CTS6.Decoder        (clock, lanes, event/heat)
- *   Meet Manager port -> GENSER.StreamParser (titles, names, teams)
+ *   event data        -> GENSER.RosterStore  (titles, names, teams), from either
+ *     Meet Manager port -> GENSER.StreamParser
+ *     files             -> CTS6.parseSCB() or GENSER.readCapture()
  *   both              -> CTS6.payload()      -> BroadcastChannel, relay, OBS
  */
 'use strict';
@@ -107,7 +109,7 @@
         () => { decoder = new CTS6.Decoder(); timerStart = performance.now(); latest = decoder.snapshot(0); Object.assign(clock, { value: null, at: null, steps: [], skipped: 0 }); },
         () => { stopPublishing(); latest = decoder.snapshot(Infinity); });
 
-    // ---- Meet Manager start lists --------------------------------------------------------
+    // ---- event data: start lists from Meet Manager's serial link or from files ------------
     function saveRosters() {
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => { try { localStorage.setItem(ROSTERS, JSON.stringify(rosters)); } catch (e) { /* storage full or blocked */ } }, 500);
@@ -116,6 +118,35 @@
         const now = performance.now(), records = parser.feed(chunk, now);
         for (const record of records) { rosters.add(record); lastRecord = record; lastRecordAt = now; }
         if (records.length) { saveRosters(); publish(); }
+    }
+    /** Add start lists from files: Meet Manager .scb files, or captures of the scoreboard link. */
+    async function loadEventData(files) {
+        hideError();
+        const heats = new Set(), events = new Set(), failed = [];
+        let read = 0;
+        for (const file of files) {
+            try {
+                if (file.size > 50 * 1024 * 1024) throw new Error('larger than 50 MB');
+                const bytes = new Uint8Array(await file.arrayBuffer());
+                if (/\.scb$/i.test(file.name)) {
+                    const roster = CTS6.parseSCB(new TextDecoder('windows-1252').decode(bytes));
+                    rosters.addEvent(roster); events.add(roster.event);
+                    roster.heats.forEach((_, i) => heats.add(roster.event + '/' + (i + 1)));
+                } else {
+                    let records = GENSER.readCapture(new TextDecoder().decode(bytes));          // a capture log
+                    if (!records.length) records = GENSER.readCapture(bytes);                   // or the bytes themselves
+                    if (!records.length) throw new Error('no start lists found');
+                    for (const record of records) { rosters.add(record); events.add(record.event); heats.add(record.event + '/' + record.heat); }
+                }
+                read++;
+            } catch (e) { failed.push(`${file.name} (${e.message || e})`); }
+        }
+        if (read) { saveRosters(); lastSent = ''; publish(); }
+        const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+        $('eventFileStatus').textContent = read ? `Read ${count(read, 'file')}: ${count(heats.size, 'heat')} in ${count(events.size, 'event')}.`
+            : files.length ? 'Nothing was loaded.' : 'No files to read. A folder is searched for .scb files only.';
+        if (failed.length) showError(new Error('Could not read event data from ' + failed.slice(0, 5).join('; ') + (failed.length > 5 ? `; and ${failed.length - 5} more` : '')));
+        render();
     }
     const genser = new SerialLink(onGenserChunk, () => { parser.reset(); asked.clear(); askedFor = ''; }, () => {});
     function ask(event, heat, now, limit) {
@@ -187,9 +218,9 @@
                 : parser.requests ? 'Connected · seeing requests but no start lists. This is the scoreboard computer’s transmit line; move the tap to Meet Manager’s.'
                 : parser.bytes ? 'Connected · bytes arriving but no start list yet' : 'Connected · no data yet. Meet Manager only sends when asked.';
         }
-        const ports = [timer.connected && 'timer', genser.connected && 'start lists'].filter(Boolean);
-        $('sourceStatus').textContent = ports.length ? 'Connected: ' + ports.join(' + ') : 'No ports connected';
-        $('rosterSummary').textContent = rosters.heats ? `${rosters.heats} heats saved across ${rosters.events.size} events` : 'No start lists saved';
+        $('sourceStatus').textContent = (timer.connected ? 'Timer connected' : 'Timer not connected') + ' · '
+            + (rosters.heats ? `Event data: ${rosters.heats} heats` : 'No event data') + (genser.connected ? ' · serial connected' : '');
+        $('rosterSummary').textContent = rosters.heats ? `${rosters.heats} heats saved across ${rosters.events.size} events` : 'No event data saved';
         $('bytes').textContent = latest.bytes.toLocaleString(); $('blocks').textContent = latest.blocks.toLocaleString();
         const steps = clock.steps;
         $('clockRate').textContent = steps.length ? (steps.length / 10).toFixed(1) : '—';
@@ -229,6 +260,9 @@
     $('timerDisconnect').onclick = () => timer.disconnect();
     $('genserConnect').onclick = () => genser.connect(serialSettings('genser'), timer);
     $('genserDisconnect').onclick = () => genser.disconnect();
+    const chosen = filter => e => { const files = Array.from(e.target.files).filter(filter); e.target.value = ''; loadEventData(files); };
+    $('eventFiles').onchange = chosen(() => true);
+    $('eventFolder').onchange = chosen(file => /\.scb$/i.test(file.name));
     $('clearRosters').onclick = () => { rosters.clear(); lastRecord = null; try { localStorage.removeItem(ROSTERS); } catch (e) { /* storage blocked */ } lastSent = ''; render(); };
     $('relay').onclick = () => { hideError(); try { if (relay.active) relay.disconnect(); else relay.connect($('relayUrl').value); saveSettings(); } catch (e) { showError(e); } };
     $('obs').onclick = () => { hideError(); try { if (obs.active) obs.disconnect(); else obs.connect($('obsUrl').value, $('obsPassword').value); saveSettings(); } catch (e) { showError(e); } };
