@@ -238,6 +238,18 @@ Serve the page from localhost when OBS is on another machine. A page loaded over
 
 The page shows how many clock updates arrive per second, the longest gap between them, and how many tenths were missing. The console sends the clock ten times a second, so a healthy feed reads about 10 per second with gaps near 100 ms. Serial read errors are counted per port. A wrong parity setting shows up as bytes arriving while nothing decodes.
 
+### Trying it without hardware
+
+Open `http://localhost:8873/SerialBridge.html?simulate=1`, or follow **Run with simulated ports** at the foot of the page. Both connect buttons then open a made-up device in place of a real port: a timing console running a five-heat meet on a loop of about five minutes, and Meet Manager sending the start lists for it. Each heat sits at 0:00.0 for 8 seconds, runs with a split and a finish per lane, then holds the results for 8 seconds. Ticking **Ask Meet Manager for the current heat** makes the simulated Meet Manager answer the page's own requests. `CTS6.html?simulate=1` offers the timer port alone.
+
+Everything downstream of the port is the real page: decoding, the health readout, publishing to overlays, the relay and OBS. A banner marks the page as simulated, and simulated start lists are saved apart from real ones. All names are invented.
+
+The bytes come from `js/bridge/simulator.js`, which is written from this project's own reading of the two protocols. It shows that the page works, not that the reading is right. Splits are sent without a place, format data carries only the reset dot, and wrong baud or parity settings have no effect.
+
+```bash
+node js/test_serial_simulator.js
+```
+
 ### Status
 
 The decoders are tested against real captures of both links. The page is tested in a browser with mocked serial ports, the relay, and a stand-in for the OBS WebSocket server written from the protocol documentation. It has not yet been run against the physical ports or a real OBS instance. See [Meet Manager link findings](docs/GENSER-Serial-Protocol-Findings.md) for what the start-list decoding does and does not cover.

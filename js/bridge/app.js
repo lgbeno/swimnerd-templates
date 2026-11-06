@@ -7,7 +7,8 @@
 'use strict';
 (() => {
     const $ = id => document.getElementById(id);
-    const SETTINGS = 'swimnerd-bridge-settings', ROSTERS = 'swimnerd-bridge-rosters';
+    // Simulated start lists are stored apart, so made-up names never turn up at a real meet.
+    const SETTINGS = 'swimnerd-bridge-settings', ROSTERS = 'swimnerd-bridge-rosters' + (globalThis.SerialSim?.active ? '-simulated' : '');
     const channel = new BroadcastChannel('swimnerd-scoreboard');
     const parser = new GENSER.StreamParser();
     let decoder = new CTS6.Decoder(), latest = decoder.snapshot(0), timerStart = performance.now();
