@@ -10,6 +10,7 @@ A streaming overlay system for competitive swimming meets. Displays real-time ra
 - [Timer Template](https://lgbeno.github.io/swimnerd-templates/themes/default/TimerOverlay.html)
 - [Data Logger](https://lgbeno.github.io/swimnerd-templates/DataLogger.html)
 - [CTS6 Serial Decoder](CTS6.html) — capture replay, Meet Manager roster matching, and read-only Web Serial input.
+- [Serial Bridge](SerialBridge.html) — two live serial ports in (timing console and Meet Manager), overlay feed out.
 
 ## Overview
 
@@ -156,13 +157,17 @@ The system broadcasts JSON in this structure:
 ```
 ├── Simulator.html               # Main control interface
 ├── DataLogger.html              # WebSocket data logger
+├── SerialBridge.html            # Live serial ports to overlay feed
+├── CTS6.html                    # Capture replay and decoder lab
 ├── js/                          # Shared overlay logic
 │   ├── overlay-core.js
 │   ├── lane-overlay.js
 │   ├── timer-overlay.js
 │   ├── header-overlay.js
 │   ├── LogCompressor.js
-│   └── test_log_compressor.js
+│   ├── test_log_compressor.js
+│   ├── cts6/                    # Timing console decoder
+│   └── bridge/                  # Meet Manager decoder, relay and OBS links, bridge page logic
 ├── css/                         # Structural layout CSS
 │   ├── lane-structure.css
 │   ├── timer-structure.css
@@ -191,3 +196,52 @@ In the [Spooky preview](themes/spooky/Preview.html), **Next event** changes the 
 Open [CTS6.html](CTS6.html) through a local HTTP server to replay a CTS6 capture or connect a legacy scoreboard serial feed. Import an extracted meet folder containing `CTS6_Capture.csv` and Meet Manager `.scb` files. The page provides playback, seeking, lane/time inspection, raw channels, JSON download, and optional publishing to the existing overlays. Video features are not included.
 
 Live Web Serial requires desktop Chrome/Edge and localhost or HTTPS. Finish classification and reset-state inference are experimental and disabled in overlay output by default; actual CTS6 hardware remains to be validated. See [decoder documentation](js/cts6/README.md) for supported fields, settings, limitations, and tests.
+
+## Serial bridge
+
+[SerialBridge.html](SerialBridge.html) connects to two serial ports at once and publishes the overlay feed live, with no capture files:
+
+| Port | Source | Settings | Provides |
+| --- | --- | --- | --- |
+| Timer stream | CTS scoreboard output | 9600 baud, 8 data, even parity, 1 stop | running clock, lane times and places, event and heat numbers |
+| Start lists | Meet Manager generic scoreboard link | 9600 baud, 8 data, no parity, 1 stop | event title, swimmer or relay names, teams |
+
+It reuses the CTS6 decoder and produces the same JSON as the simulator, so the existing overlays need no changes to display it.
+
+### Running it
+
+Web Serial needs desktop Chrome or Edge and a page served from localhost or HTTPS:
+
+```bash
+python3 -m http.server 8873
+```
+
+Open `http://localhost:8873/SerialBridge.html`, connect each port, check the scoreboard preview, then tick **Publish to overlays**.
+
+The start-list port only listens by default. It collects start lists as the scoreboard computer requests them from Meet Manager and saves them in the browser, so they survive a reload. Tick **Ask Meet Manager for the current heat** only when the adapter is wired in place of the scoreboard computer. In that mode the page transmits requests, which must never happen on a tapped live link.
+
+### Getting the feed into OBS
+
+A web page can open WebSocket connections but cannot accept them, so the bridge cannot be a WebSocket server by itself. Something else has to sit between the page and an OBS Browser Source. Three outputs are available, and they can be used together:
+
+| Output | Reaches | Needs |
+| --- | --- | --- |
+| BroadcastChannel | overlay tabs in the same browser profile | nothing |
+| WebSocket relay | any machine that can reach the relay | `websocket-test-server` running; overlays connect to `ws://localhost:8080/`, so run it on the OBS machine |
+| OBS directly | every Browser Source in that OBS | OBS 28 or newer, with **Tools → WebSocket Server Settings → Enable WebSocket server** |
+
+The direct route uses the WebSocket server built into OBS. The bridge logs in and sends each update with the obs-browser `emit_event` request, and OBS hands it to every Browser Source as a `swimnerd-scoreboard` window event, which `js/overlay-core.js` listens for. No relay process is needed. Enter the OBS machine's address, for example `ws://192.168.1.20:4455/`, and the password shown in the OBS settings dialog.
+
+Serve the page from localhost when OBS is on another machine. A page loaded over HTTPS, such as the GitHub Pages copy, may only open `ws://` connections to localhost.
+
+### Health readout
+
+The page shows how many clock updates arrive per second, the longest gap between them, and how many tenths were missing. The console sends the clock ten times a second, so a healthy feed reads about 10 per second with gaps near 100 ms. Serial read errors are counted per port. A wrong parity setting shows up as bytes arriving while nothing decodes.
+
+### Status
+
+The decoders are tested against real captures of both links. The page is tested in a browser with mocked serial ports, the relay, and a stand-in for the OBS WebSocket server written from the protocol documentation. It has not yet been run against the physical ports or a real OBS instance. See [Meet Manager link findings](docs/GENSER-Serial-Protocol-Findings.md) for what the start-list decoding does and does not cover.
+
+```bash
+node js/test_genser.js
+```
