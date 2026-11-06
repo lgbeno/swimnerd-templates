@@ -11,10 +11,17 @@
 <main>
 <div class="intro"><div><p class="eyebrow">TIMER STREAM AND EVENT DATA IN, ONE SCOREBOARD FEED OUT</p><h1>Serial bridge<span>.</span></h1><p>Reads the timing console live, adds names from Meet Manager or from files, and feeds the overlays.</p></div><div id="sourceStatus" role="status">Timer not connected · No event data</div></div>
 <section class="inputs">
-<article><h2><span>01</span> Timer stream</h2><p>CTS6 scoreboard output from the timing console: running clock, lane times and places, event and heat numbers. This page only listens on this port.</p>
+<article><h2><span>01</span> Timer stream</h2><p>CTS6 scoreboard output from the timing console: running clock, lane times and places, event and heat numbers. Connect to the console over serial, or replay a capture of it.</p>
+<h3>Connect to serial</h3>
 <div class="actions"><label>Baud <select id="timerBaud"><option>9600</option><option>2400</option><option>1200</option><option>4800</option><option>19200</option></select></label><label>Parity <select id="timerParity"><option value="even">Even</option><option value="none">None</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>
 <div class="actions"><button id="timerConnect" class="primary">Connect timer port</button><button id="timerDisconnect" disabled>Disconnect</button></div>
-<p id="timerStatus" class="small">Not connected. The console sends 9600 baud with even parity.</p></article>
+<p id="timerStatus" class="small">Not connected. The console sends 9600 baud with even parity.</p>
+<p class="small">This page only listens on this port.</p>
+<h3>Or replay a capture</h3>
+<div class="actions"><label class="button primary">Choose file<input id="timerFile" type="file"></label><button id="timerPlay" disabled>Play</button><button id="timerRestart" disabled>Restart</button><button id="timerClose" disabled>Close</button><label>Speed <select id="timerSpeed"><option value="0.25">¼×</option><option value="1" selected>1×</option><option value="4">4×</option><option value="16">16×</option></select></label><output id="timerPosition">00:00 / 00:00</output></div>
+<label class="scrubber">Capture position<input id="timerSeek" type="range" min="0" max="1" value="0" disabled></label>
+<p id="timerFileStatus" class="small">No capture loaded.</p>
+<p class="small">Accepts a serial monitor CSV export such as CTS6_Capture.csv, or a com-monitor log recorded at the console's settings. A capture plays at the pace it was recorded and feeds everything below as the port would.</p></article>
 <article><h2><span>02</span> Event data</h2><p>The start list for each heat: event title, swimmer or relay names, and teams. Load it from files, read it from Meet Manager over serial, or both.</p>
 <h3>Load from a file</h3>
 <div class="actions"><label class="button primary">Choose files<input id="eventFiles" type="file" multiple></label><label class="button">Choose folder<input id="eventFolder" type="file" webkitdirectory multiple></label></div>

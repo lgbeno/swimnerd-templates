@@ -203,7 +203,7 @@ Live Web Serial requires desktop Chrome/Edge and localhost or HTTPS. Finish clas
 
 | Box | Source | Settings | Provides |
 | --- | --- | --- | --- |
-| Timer stream | CTS6 scoreboard output, over serial | 9600 baud, 8 data, even parity, 1 stop | running clock, lane times and places, event and heat numbers |
+| Timer stream | CTS6 scoreboard output, over serial or replayed from a capture | 9600 baud, 8 data, even parity, 1 stop | running clock, lane times and places, event and heat numbers |
 | Event data | files, or the Meet Manager generic scoreboard link over serial | 9600 baud, 8 data, no parity, 1 stop | event title, swimmer or relay names, teams |
 
 It reuses the CTS6 decoder and produces the same JSON as the simulator, so the existing overlays need no changes to display it.
@@ -217,6 +217,8 @@ python3 -m http.server 8873
 ```
 
 Open `http://localhost:8873/SerialBridge.html`, connect the timer port, give the page its event data, check the scoreboard preview, then tick **Publish to overlays**.
+
+The timer stream can also be replayed from a capture, with no port at all. **Choose file** in the Timer stream box accepts a serial monitor CSV export such as `CTS6_Capture.csv`, or a `com-monitor` log, and **Play** then feeds the page as the port would: the scoreboard preview, the health readout and publishing all run from it. Bytes are handed out at line rate ahead of each recorded timestamp, so the clock ticks tenth by tenth even when the recording stamped several ticks at once; gaps in the health readout are only as fine as the recording. A capture must have been recorded at the console's own settings. One taken with the wrong parity has no readable clock and is refused, because the damage cannot be undone afterwards.
 
 Event data can come from files, from serial, or from both. **Choose files** accepts Meet Manager start-list files (`.scb`, one per event) and captures of the scoreboard link: a `com-monitor` log or the raw bytes. **Choose folder** reads every `.scb` file in a folder. An `.scb` file replaces its whole event, a start list from a capture or from serial replaces one heat, and everything is saved in the browser until **Clear saved event data** is pressed, so clear it before loading a new meet.
 

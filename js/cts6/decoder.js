@@ -152,6 +152,20 @@
         if (!chunks.length) throw new Error('No RX data found');
         return chunks;
     }
+    /** How steadily the clock counts through a capture. A correctly framed feed steps one tenth at a
+     *  time; one recorded at the wrong baud or parity jumps about. */
+    function clockSteps(chunks) {
+        const d = new Decoder(); let sequence = 0, previous = null, changes = 0, steady = 0;
+        for (const c of chunks) for (let i = 0; i < c.bytes.length; i++) {
+            d.feed(c.bytes.subarray(i, i + 1), c.at);
+            if (d.clockSequence === sequence) continue;
+            sequence = d.clockSequence;
+            const tenths = d.clock ? Math.round(Number(d.clock.split(':')[0]) * 600 + Number(d.clock.split(':')[1]) * 10) : null;
+            if (tenths !== null && previous !== null && tenths !== previous) { changes++; if (tenths - previous === 1) steady++; }
+            if (tenths !== null) previous = tenths;
+        }
+        return { clocks: sequence, changes, steady };
+    }
     class Replay {
         constructor(chunks) { this.chunks = chunks; this.decoder = new Decoder(); this.index = 0; this.at = 0; this.duration = chunks.at(-1)?.at || 0; }
         seek(at) {
@@ -162,6 +176,26 @@
             }
             if (this.index === this.chunks.length) this.decoder.finish(this.duration);
             this.at = at; return this.decoder.snapshot(at);
+        }
+    }
+    /** Hands out a capture's bytes as they arrived. A capture stamps a whole chunk with the time it was
+     *  read, but its bytes took time on the line before that, so they are spread back over it at line
+     *  rate (11 bits a byte). Chunk times start at zero. */
+    class Pacer {
+        constructor(chunks, baud = 9600) { this.chunks = chunks; this.perByte = 11000 / baud; this.duration = chunks.length ? chunks.at(-1).at : 0; this.rewind(); }
+        rewind() { this.index = 0; this.offset = 0; }
+        /** Everything not yet handed out that had arrived by `target` ms: [{ at, bytes }]. */
+        take(target) {
+            const out = [];
+            while (this.index < this.chunks.length) {
+                const c = this.chunks[this.index];
+                const began = Math.max(this.index ? this.chunks[this.index - 1].at : -Infinity, c.at - c.bytes.length * this.perByte);
+                const end = target >= c.at ? c.bytes.length : Math.max(0, Math.floor(c.bytes.length * (target - began) / (c.at - began)));
+                if (end > this.offset) { out.push({ at: Math.min(target, c.at), bytes: c.bytes.subarray(this.offset, end) }); this.offset = end; }
+                if (end < c.bytes.length) break;
+                this.index++; this.offset = 0;
+            }
+            return out;
         }
     }
     function payload(snapshot, rosters, { placedTimesAreFinal = false, trustReset = false } = {}) {
@@ -186,5 +220,5 @@
             })
         } };
     }
-    return { Decoder, Replay, parseSCB, parseCapture, payload };
+    return { Decoder, Replay, Pacer, parseSCB, parseCapture, clockSteps, payload };
 });

@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { Decoder, Replay, parseSCB, parseCapture, payload } = require('./cts6/decoder');
+const { Decoder, Replay, Pacer, parseSCB, parseCapture, clockSteps, payload } = require('./cts6/decoder');
 let count = 0;
 function test(name, fn) { fn(); console.log('PASS ' + name); count++; }
 const control = (channel, format = false, universal = false) => 128 | ((channel ^ 31) << 1) | Number(format) | (universal ? 64 : 0);
@@ -75,6 +75,38 @@ test('replay seek is deterministic including rewind and final block flush', () =
     const r = new Replay(chunks), end = r.seek(100); r.seek(0); assert.deepEqual(r.seek(100), end);
     const uninterrupted = new Decoder(); for (const c of chunks) uninterrupted.feed(c.bytes, c.at); uninterrupted.finish(100);
     assert.deepEqual(end, uninterrupted.snapshot(100));
+});
+// A clock block as the console sends it: channel 0, positions 7 down to 2, tenths of a second.
+const clockBlock = tenths => { const text = String(Math.floor(tenths / 600)).padStart(2) + String(Math.floor(tenths / 10) % 60).padStart(2, '0') + tenths % 10;
+    return [control(0), ...[7, 6, 5, 4, 3, 2].map(p => (p << 4) | (p === 7 || text[p - 2] === ' ' ? 0 : 15 - Number(text[p - 2])))]; };
+test('a capture is paced at line rate: no byte early, none lost, any step size', () => {
+    // Three chunks as a serial monitor stamps them: read in bursts, each holding several clock ticks.
+    const ticks = Array.from({ length: 12 }, (_, i) => clockBlock(595 + i)), bytes = (from, to) => Uint8Array.from(ticks.slice(from, to).flat());
+    const chunks = [{ at: 0, bytes: bytes(0, 2) }, { at: 400, bytes: bytes(2, 6) }, { at: 5000, bytes: bytes(6, 12) }];
+    const all = chunks.flatMap(c => Array.from(c.bytes)), perByte = 11000 / 9600;
+    for (const step of [1, 7, 25, 100, 333, 6000]) {
+        const pacer = new Pacer(chunks), got = [], d = new Decoder(), shown = [];
+        assert.equal(pacer.duration, 5000);
+        for (let t = 0; t <= 5000 + step; t += step) for (const part of pacer.take(t)) {
+            assert(part.at <= t); got.push(...part.bytes);
+            assert(got.length <= 14 || t >= 400 - 28 * perByte - 1e-9, 'second chunk starts no earlier than line rate allows');
+            assert(got.length <= 42 || t >= 5000 - 42 * perByte - 1e-9, 'a long silence is not filled in');
+            d.feed(part.bytes, part.at); if (d.clock && shown.at(-1) !== d.clock) shown.push(d.clock);
+        }
+        assert.deepEqual(got, all); assert.equal(pacer.take(9e9).length, 0);
+        if (step <= 7) assert.equal(shown.length, 11);                 // every tick but the last, which commits at the next control byte
+        pacer.rewind(); assert.deepEqual(pacer.take(9e9).flatMap(p => Array.from(p.bytes)), all);
+    }
+    assert.deepEqual(new Pacer([]).take(100), []);
+});
+test('clock steadiness tells a clean capture from a scrambled one', () => {
+    const clean = Array.from({ length: 80 }, (_, i) => ({ at: i * 100, bytes: Uint8Array.from([...clockBlock(i), ...(i % 10 ? [] : block(12, '  5    2'))]) }));
+    assert.deepEqual(clockSteps(clean), { clocks: 79, changes: 78, steady: 78 });               // the last block never commits
+    const restarted = clean.concat(clean.map(c => ({ at: c.at + 8000, bytes: c.bytes })));       // a new race: one step back to zero
+    assert.deepEqual(clockSteps(restarted), { clocks: 159, changes: 158, steady: 157 });
+    const scrambled = clean.map(c => ({ at: c.at, bytes: c.bytes.map(b => b & 0x80 ? b : (b * 7 + 3) & 0x7f) }));
+    const s = clockSteps(scrambled); assert(s.steady < s.changes * 0.5 || s.changes < 20);
+    assert.deepEqual(clockSteps([]), { clocks: 0, changes: 0, steady: 0 });
 });
 // Optional real-world validation. Keep meet captures/athlete data outside the repo.
 if (process.argv[2]) test('weekend capture and SCB archive regression', () => {

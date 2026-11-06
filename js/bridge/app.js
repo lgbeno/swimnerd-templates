@@ -1,6 +1,8 @@
 /* Serial bridge controller: timer stream and event data in, one overlay feed out.
  *
- *   timer port        -> CTS6.Decoder        (clock, lanes, event/heat)
+ *   timer stream      -> CTS6.Decoder        (clock, lanes, event/heat), from either
+ *     timer port        -> live bytes
+ *     a capture file    -> the same bytes, replayed at the pace they were recorded
  *   event data        -> GENSER.RosterStore  (titles, names, teams), from either
  *     Meet Manager port -> GENSER.StreamParser
  *     files             -> CTS6.parseSCB() or GENSER.readCapture()
@@ -18,6 +20,7 @@
     let lastSent = '', lastSendAt = 0, sent = 0;
     const clock = { value: null, at: null, steps: [], skipped: 0 };
     const asked = new Map(); let askedFor = '', lastAskAt = -Infinity;
+    let replay = null;      // a loaded timer capture: { name, pacer, duration, at, playing, lastTick, note }
 
     const showError = e => { $('error').hidden = false; $('error').textContent = e.message || String(e); };
     const hideError = () => { $('error').hidden = true; };
@@ -93,8 +96,7 @@
         if (seconds !== clock.value) { clock.value = seconds; clock.at = at; }
         while (clock.steps.length && at - clock.steps[0].at > 10000) clock.steps.shift();
     }
-    function onTimerChunk(chunk) {
-        const at = performance.now() - timerStart;
+    function feedTimer(chunk, at) {
         let sequence = decoder.clockSequence;
         // Publish at every completed clock block, so two ticks that arrive in one read both go out.
         for (let i = 0; i < chunk.length; i++) {
@@ -105,9 +107,57 @@
         }
         latest = decoder.snapshot(at); publish();
     }
-    const timer = new SerialLink(onTimerChunk,
-        () => { decoder = new CTS6.Decoder(); timerStart = performance.now(); latest = decoder.snapshot(0); Object.assign(clock, { value: null, at: null, steps: [], skipped: 0 }); },
+    function resetTimer() { decoder = new CTS6.Decoder(); latest = decoder.snapshot(0); Object.assign(clock, { value: null, at: null, steps: [], skipped: 0 }); }
+    const timer = new SerialLink(chunk => feedTimer(chunk, performance.now() - timerStart),
+        () => { replay = null; resetTimer(); timerStart = performance.now(); },
         () => { stopPublishing(); latest = decoder.snapshot(Infinity); });
+    /** The timer stream is arriving: from the port, or from a capture that is playing. */
+    const timerLive = () => timer.connected || !!replay?.playing;
+
+    // ---- timer capture replay --------------------------------------------------------------
+    const elapsed = ms => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
+    /** Feed the capture up to `target` ms; `live` also publishes and tracks the clock, as the port does. */
+    function replayTo(target, live) {
+        for (const part of replay.pacer.take(target)) { if (live) feedTimer(part.bytes, part.at); else decoder.feed(part.bytes, part.at); }
+        replay.at = target; latest = decoder.snapshot(target);
+    }
+    function seekReplay(target) {
+        target = Math.max(0, Math.min(replay.duration, target));
+        resetTimer(); replay.pacer.rewind();
+        replayTo(target, false); lastSent = '';
+    }
+    function stepReplay() {
+        if (!replay?.playing) return;
+        const now = performance.now(), target = replay.at + (now - replay.lastTick) * Number($('timerSpeed').value);
+        replay.lastTick = now;
+        replayTo(Math.min(target, replay.duration), true);
+        if (target >= replay.duration) { decoder.finish(replay.duration); replay.playing = false; latest = decoder.snapshot(replay.duration); render(); }
+    }
+    /** Load a capture of the timer stream: a serial monitor CSV export, or a com-monitor log. */
+    async function loadTimerCapture(file) {
+        hideError();
+        try {
+            if (file.size > 50 * 1024 * 1024) throw new Error('larger than 50 MB');
+            const text = new TextDecoder().decode(await file.arrayBuffer()), frames = GENSER.parseLog(text);
+            let chunks, steps;
+            if (frames.length) {
+                // A log can hold several ports. The timer is the one whose clock counts.
+                const origin = frames[0].at, ports = new Map();
+                for (const f of frames) { if (!ports.has(f.source)) ports.set(f.source, []); ports.get(f.source).push({ at: f.at - origin, bytes: f.bytes }); }
+                for (const candidate of ports.values()) { const found = CTS6.clockSteps(candidate); if (!steps || found.steady > steps.steady) { chunks = candidate; steps = found; } }
+            } else { chunks = CTS6.parseCapture(text); steps = CTS6.clockSteps(chunks); }
+            if (steps.clocks < 10) {
+                const opened = Array.from(text.matchAll(/# (\S+): open (\d+) (\d[NEO]\d)/g), m => `${m[1]} at ${m[2]} ${m[3]}`);
+                throw new Error('no CTS6 clock found.' + (opened.length ? ` The log says its ports were opened as ${[...new Set(opened)].join(', ')}. The console sends 9600 8E1, and a capture recorded with other settings cannot be replayed.` : ''));
+            }
+            const start = chunks[0].at;
+            const pacer = new CTS6.Pacer(chunks.map(c => ({ at: c.at - start, bytes: c.bytes })), Number($('timerBaud').value));
+            replay = { name: file.name, pacer, duration: pacer.duration, at: 0, playing: false, lastTick: 0,
+                note: steps.changes >= 20 && steps.steady < steps.changes * 0.9 ? ` The clock counts steadily in only ${Math.round(100 * steps.steady / steps.changes)}% of its steps, so this capture may have been recorded with the wrong baud or parity.` : '' };
+            stopPublishing(); seekReplay(0);
+        } catch (e) { showError(new Error(`Could not load a timer capture from ${file.name}: ${e.message || e}`)); }
+        render();
+    }
 
     // ---- event data: start lists from Meet Manager's serial link or from files ------------
     function saveRosters() {
@@ -170,7 +220,7 @@
     const output = () => CTS6.payload(latest, view(), { placedTimesAreFinal: $('finals').checked, trustReset: $('resetState').checked });
     function stopPublishing() { $('publish').checked = false; lastSent = ''; }
     function publish() {
-        if (!$('publish').checked || !timer.connected || !latest.event || !latest.heat) return;
+        if (!$('publish').checked || !timerLive() || !latest.event || !latest.heat) return;
         const data = output(), serialized = JSON.stringify(data), now = performance.now();
         if (serialized === lastSent && now - lastSendAt < 1000) return;
         channel.postMessage(data); relay.send(serialized); obs.send(data);
@@ -203,6 +253,16 @@
             return tr;
         }));
         const support = 'serial' in navigator;
+        const busy = timer.connected || timer.opening;
+        $('timerFile').disabled = busy;
+        ['timerPlay', 'timerRestart', 'timerSeek', 'timerClose'].forEach(id => $(id).disabled = !replay);
+        $('timerPlay').textContent = replay?.playing ? 'Pause' : 'Play';
+        $('timerSeek').max = replay?.duration || 1; $('timerSeek').value = replay?.at || 0;
+        $('timerPosition').textContent = replay ? `${elapsed(replay.at)} / ${elapsed(replay.duration)}` : '00:00 / 00:00';
+        const warn = !!replay?.note;
+        $('timerFileStatus').className = 'small' + (warn ? ' status-warn' : '');
+        $('timerFileStatus').textContent = !replay ? (busy ? 'Disconnect the port to replay a capture.' : 'No capture loaded.')
+            : `${replay.name} · ${replay.playing ? 'playing' : replay.at >= replay.duration ? 'finished' : 'paused'} · ${latest.bytes.toLocaleString()} bytes so far.${replay.note}`;
         $('timerConnect').disabled = !support || timer.connected || timer.opening;
         $('timerDisconnect').disabled = !timer.connected || timer.closing;
         $('genserConnect').disabled = !support || genser.connected || genser.opening;
@@ -218,7 +278,7 @@
                 : parser.requests ? 'Connected · seeing requests but no start lists. This is the scoreboard computer’s transmit line; move the tap to Meet Manager’s.'
                 : parser.bytes ? 'Connected · bytes arriving but no start list yet' : 'Connected · no data yet. Meet Manager only sends when asked.';
         }
-        $('sourceStatus').textContent = (timer.connected ? 'Timer connected' : 'Timer not connected') + ' · '
+        $('sourceStatus').textContent = (timer.connected ? 'Timer connected' : replay ? (replay.playing ? 'Timer: capture playing' : 'Timer: capture paused') : 'Timer not connected') + ' · '
             + (rosters.heats ? `Event data: ${rosters.heats} heats` : 'No event data') + (genser.connected ? ' · serial connected' : '');
         $('rosterSummary').textContent = rosters.heats ? `${rosters.heats} heats saved across ${rosters.events.size} events` : 'No event data saved';
         $('bytes').textContent = latest.bytes.toLocaleString(); $('blocks').textContent = latest.blocks.toLocaleString();
@@ -233,7 +293,7 @@
             ? `Last start list: event ${lastRecord.event} heat ${lastRecord.heat} · ${lastRecord.title} · ${lastRecord.lanes.filter(l => l.name).length} lanes · ${Math.round((performance.now() - lastRecordAt) / 1000)} s ago`
             : 'No start list received yet.';
         $('publishStatus').textContent = !$('publish').checked ? 'Publishing is off.'
-            : !timer.connected ? 'Waiting: connect the timer port.'
+            : !timerLive() ? 'Waiting: connect the timer port or play a capture.'
             : !(latest.event && latest.heat) ? 'Waiting: no event and heat decoded yet.'
             : 'Publishing' + [relay.open && ' · relay', obs.open && ' · OBS'].filter(Boolean).join('') + ' · browser tabs';
         $('channels').textContent = ' CH  DISPLAY   UNIVERSAL  RAW DIGITS                 FORMAT\n' + latest.channels.map(c =>
@@ -260,6 +320,16 @@
     $('timerDisconnect').onclick = () => timer.disconnect();
     $('genserConnect').onclick = () => genser.connect(serialSettings('genser'), timer);
     $('genserDisconnect').onclick = () => genser.disconnect();
+    $('timerFile').onchange = e => { const file = e.target.files[0]; e.target.value = ''; if (file) loadTimerCapture(file); };
+    $('timerPlay').onclick = () => {
+        if (!replay) return;
+        if (!replay.playing && replay.at >= replay.duration) seekReplay(0);
+        replay.playing = !replay.playing; replay.lastTick = performance.now(); render();
+    };
+    $('timerRestart').onclick = () => { if (replay) { seekReplay(0); replay.lastTick = performance.now(); render(); } };
+    $('timerSeek').oninput = e => { if (replay) { seekReplay(Number(e.target.value)); replay.lastTick = performance.now(); render(); } };
+    $('timerSpeed').onchange = () => { if (replay) replay.lastTick = performance.now(); };
+    $('timerClose').onclick = () => { replay = null; resetTimer(); lastSent = ''; render(); };
     const chosen = filter => e => { const files = Array.from(e.target.files).filter(filter); e.target.value = ''; loadEventData(files); };
     $('eventFiles').onchange = chosen(() => true);
     $('eventFolder').onchange = chosen(file => /\.scb$/i.test(file.name));
@@ -275,6 +345,7 @@
     if (!('serial' in navigator)) {
         $('timerStatus').textContent = $('genserStatus').textContent = 'Web Serial is not available here. Open this page in desktop Chrome or Edge, over localhost or HTTPS.';
     }
+    setInterval(stepReplay, 25);
     setInterval(() => {
         const now = performance.now();
         if (timer.connected) latest = decoder.snapshot(now - timerStart);
