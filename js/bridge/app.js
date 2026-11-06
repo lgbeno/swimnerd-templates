@@ -20,6 +20,8 @@
     let lastSent = '', lastSendAt = 0, sent = 0;
     const clock = { value: null, at: null, steps: [], skipped: 0 };
     const asked = new Map(); let askedFor = '', lastAskAt = -Infinity;
+    const changes = [];     // what arriving event data did, newest first: { at, source, text, kind }
+    let changeCount = 0, unchanged = 0, viewKey = '', optionsKey = '';
     let replay = null;      // a loaded timer capture: { name, pacer, duration, at, playing, lastTick, note }
 
     const showError = e => { $('error').hidden = false; $('error').textContent = e.message || String(e); };
@@ -164,35 +166,47 @@
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => { try { localStorage.setItem(ROSTERS, JSON.stringify(rosters)); } catch (e) { /* storage full or blocked */ } }, 500);
     }
+    const laneText = a => a.name ? a.name + (a.team ? ` (${a.team})` : '') : 'empty';
+    /** Note what one stored heat did. Repeats that change nothing are counted, not listed. */
+    function note(result, source, at) {
+        if (result.status === 'unchanged') { unchanged++; return; }
+        const detail = [result.title && `title “${result.title.from}” → “${result.title.to}”`,
+            ...result.changes.map(c => `lane ${c.lane} ${laneText(c.from)} → ${laneText(c.to)}`)].filter(Boolean).join('; ');
+        changes.unshift({ at, source, kind: result.status, text: `Event ${result.event} heat ${result.heat} ${result.status}` + (detail ? ': ' + detail : '') });
+        changes.length = Math.min(changes.length, 200); changeCount++;
+    }
     function onGenserChunk(chunk) {
         const now = performance.now(), records = parser.feed(chunk, now);
-        for (const record of records) { rosters.add(record); lastRecord = record; lastRecordAt = now; }
+        for (const record of records) { note(rosters.add(record, 'serial', Date.now()), 'serial', Date.now()); lastRecord = record; lastRecordAt = now; }
         if (records.length) { saveRosters(); publish(); }
     }
     /** Add start lists from files: Meet Manager .scb files, or captures of the scoreboard link. */
     async function loadEventData(files) {
         hideError();
-        const heats = new Set(), events = new Set(), failed = [];
-        let read = 0;
+        const heats = new Set(), events = new Set(), failed = [], at = Date.now();
+        let read = 0, added = 0;
+        // A file can add hundreds of heats at once: list what it replaced or removed, and total the rest.
+        const noteFile = (result, name) => { if (result.status === 'added') added++; else note(result, name, at); };
         for (const file of files) {
             try {
                 if (file.size > 50 * 1024 * 1024) throw new Error('larger than 50 MB');
                 const bytes = new Uint8Array(await file.arrayBuffer());
                 if (/\.scb$/i.test(file.name)) {
                     const roster = CTS6.parseSCB(new TextDecoder('windows-1252').decode(bytes));
-                    rosters.addEvent(roster); events.add(roster.event);
+                    rosters.addEvent(roster, file.name, at).forEach(result => noteFile(result, file.name)); events.add(roster.event);
                     roster.heats.forEach((_, i) => heats.add(roster.event + '/' + (i + 1)));
                 } else {
                     let records = GENSER.readCapture(new TextDecoder().decode(bytes));          // a capture log
                     if (!records.length) records = GENSER.readCapture(bytes);                   // or the bytes themselves
                     if (!records.length) throw new Error('no start lists found');
-                    for (const record of records) { rosters.add(record); events.add(record.event); heats.add(record.event + '/' + record.heat); }
+                    for (const record of records) { noteFile(rosters.add(record, file.name, at), file.name); events.add(record.event); heats.add(record.event + '/' + record.heat); }
                 }
                 read++;
             } catch (e) { failed.push(`${file.name} (${e.message || e})`); }
         }
-        if (read) { saveRosters(); lastSent = ''; publish(); }
         const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+        if (added) { changes.unshift({ at, source: count(read, 'file'), kind: 'added', text: `${count(added, 'heat')} added` }); changeCount++; }
+        if (read) { saveRosters(); lastSent = ''; publish(); }
         $('eventFileStatus').textContent = read ? `Read ${count(read, 'file')}: ${count(heats.size, 'heat')} in ${count(events.size, 'event')}.`
             : files.length ? 'Nothing was loaded.' : 'No files to read. A folder is searched for .scb files only.';
         if (failed.length) showError(new Error('Could not read event data from ' + failed.slice(0, 5).join('; ') + (failed.length > 5 ? `; and ${failed.length - 5} more` : '')));
@@ -238,7 +252,46 @@
 
     // ---- display -------------------------------------------------------------------------
     const serialSettings = prefix => ({ baudRate: Number($(prefix + 'Baud').value), dataBits: 8, stopBits: 1, parity: $(prefix + 'Parity').value, flowControl: 'none' });
+    const el = (tag, text, className) => { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; };
+    const clockTime = at => at ? new Date(at).toLocaleTimeString() : '';
+    /** The event data viewer: every heat held for one event, where it came from, and what changed lately. */
+    function renderViewer() {
+        const map = view(), events = [...map.keys()].sort((a, b) => a - b);
+        const count = e => map.get(e).heats.filter(Boolean).length;
+        const labels = events.map(e => `${e} · ${map.get(e).title || 'No title'} · ${count(e)} heat${count(e) === 1 ? '' : 's'}`);
+        if (labels.join('\n') !== optionsKey) {                         // rebuild only when the list itself changes, so an open menu is left alone
+            optionsKey = labels.join('\n');
+            const chosen = $('viewEvent').value;
+            $('viewEvent').replaceChildren(...events.map((e, i) => { const o = el('option', labels[i]); o.value = e; return o; }));
+            if (map.has(Number(chosen))) $('viewEvent').value = chosen;
+        }
+        if ($('viewFollow').checked && map.has(latest.event)) $('viewEvent').value = latest.event;
+        const selected = events.length ? Number($('viewEvent').value) : null, entry = map.get(selected);
+        const key = [rosters.version, selected, $('firstLast').checked, latest.event, latest.heat, changeCount, unchanged].join('|');
+        if (key === viewKey) return;
+        viewKey = key;
+        const newest = [...rosters.events.values()].flatMap(e => e.info).filter(i => i?.at).sort((a, b) => b.at - a.at)[0];
+        $('viewSummary').textContent = !events.length ? 'No event data yet.'
+            : `${events.length} event${events.length === 1 ? '' : 's'} · ${rosters.heats} heat${rosters.heats === 1 ? '' : 's'}` + (newest ? ` · newest ${clockTime(newest.at)} from ${newest.source || 'an earlier visit'}` : '');
+        $('viewHeats').replaceChildren(...(entry ? Array.from(entry.heats, (heat, i) => {
+            const current = selected === latest.event && i + 1 === latest.heat, info = entry.info[i];
+            const box = el('div', undefined, 'heat' + (current ? ' current' : '')), head = el('p');
+            head.append(el('strong', `Heat ${i + 1}`), heat ? [info?.source || 'saved earlier', clockTime(info?.at)].filter(Boolean).join(' · ') : 'not received');
+            if (current) head.append(' ', el('span', 'ON THE TIMER', 'badge'));
+            box.append(head);
+            if (heat) {
+                const table = el('table'), body = el('tbody');
+                heat.forEach((a, lane) => { const tr = el('tr'); tr.append(el('td', String(lane + 1)), el('td', a.name || '—'), el('td', a.team || '—')); body.append(tr); });
+                table.append(body); box.append(table);
+            }
+            return box;
+        }) : [el('p', 'Load a file or connect to serial to see event data here.', 'small')]));
+        const rows = changes.slice(0, 60).map(c => el('li', `${clockTime(c.at)} · ${c.source} · ${c.text}`, c.kind));
+        if (unchanged) rows.push(el('li', `${unchanged.toLocaleString()} start list${unchanged === 1 ? '' : 's'} arrived again with nothing changed.`));
+        $('viewChanges').replaceChildren(...(rows.length ? rows : [el('li', 'Nothing received in this visit.')]));
+    }
     function render() {
+        renderViewer();
         const map = view(), roster = map.get(latest.event), heat = roster?.heats[latest.heat - 1];
         $('event').textContent = `${latest.event ?? '—'} / ${latest.heat ?? '—'}`;
         $('title').textContent = roster?.title || (latest.event ? 'No start list for this event yet' : 'Waiting for the timer stream');
@@ -333,7 +386,9 @@
     const chosen = filter => e => { const files = Array.from(e.target.files).filter(filter); e.target.value = ''; loadEventData(files); };
     $('eventFiles').onchange = chosen(() => true);
     $('eventFolder').onchange = chosen(file => /\.scb$/i.test(file.name));
-    $('clearRosters').onclick = () => { rosters.clear(); lastRecord = null; try { localStorage.removeItem(ROSTERS); } catch (e) { /* storage blocked */ } lastSent = ''; render(); };
+    $('viewEvent').onchange = () => { $('viewFollow').checked = false; render(); };
+    $('viewFollow').onchange = render;
+    $('clearRosters').onclick = () => { rosters.clear(); lastRecord = null; unchanged = 0; changes.unshift({ at: Date.now(), source: 'this page', kind: 'removed', text: 'All saved event data cleared' }); changeCount++; try { localStorage.removeItem(ROSTERS); } catch (e) { /* storage blocked */ } lastSent = ''; render(); };
     $('relay').onclick = () => { hideError(); try { if (relay.active) relay.disconnect(); else relay.connect($('relayUrl').value); saveSettings(); } catch (e) { showError(e); } };
     $('obs').onclick = () => { hideError(); try { if (obs.active) obs.disconnect(); else obs.connect($('obsUrl').value, $('obsPassword').value); saveSettings(); } catch (e) { showError(e); } };
     ['publish', 'finals', 'resetState', 'firstLast'].forEach(id => $(id).onchange = () => { lastSent = ''; saveSettings(); publish(); render(); });
