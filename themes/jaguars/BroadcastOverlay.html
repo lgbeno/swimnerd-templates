@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Jaguars Sectionals — OBS composite</title>
+<style>*{box-sizing:border-box}html,body{margin:0;overflow:hidden;background:transparent;width:100%;height:100%}.canvas{position:absolute;width:1920px;height:1080px;transform-origin:top left}iframe{position:absolute;border:0;background:transparent}#header{left:0;top:12px;width:1920px;height:148px}#timer{right:24px;top:24px;width:310px;height:78px}#lanes{right:24px;bottom:24px;width:760px;height:640px}</style></head>
+<body><div class="canvas"><iframe id="header" title="Event and heat"></iframe><iframe id="timer" title="Race clock"></iframe><iframe id="lanes" title="Lane lineup and finish times"></iframe></div>
+<script>
+const preview = new URLSearchParams(location.search).has('preview');
+const sources = {header:'HeaderOverlay.html',timer:'TimerOverlay.html',lanes:'LaneOverlay.html'};
+for (const [id, file] of Object.entries(sources)) document.getElementById(id).src = file + '?v=header-2' + (preview ? '&preview=1' : '');
+new ResizeObserver(() => {document.querySelector('.canvas').style.transform = `scale(${Math.min(innerWidth/1920,innerHeight/1080)})`;}).observe(document.body);
+if (preview) window.previewReceive = data => {
+    for (const id of Object.keys(sources)) document.getElementById(id).contentWindow.previewReceive?.(data);
+};
+</script></body></html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lane Overlay — Jaguars Sectionals</title>
+    <link rel="stylesheet" href="../../css/lane-structure.css">
+    <style>
+:root { --green:#103e2d; --gold:#e8b949; --ink:#081d17; --white:#fffdf2; }
+body {font-family:Arial,Helvetica,sans-serif;color:var(--white)}
+.header-content,.timer-content,.lane-content,.lineup-content,.split-content {background:linear-gradient(110deg,#173f30,#081d17);border:1px solid #65836a;border-bottom:3px solid var(--gold);box-shadow:0 4px 12px #0005}
+.visible,.appearing {animation:reveal .3s ease-out forwards}
+.hiding,.exploding {animation:exit .25s ease-in forwards}
+@keyframes reveal {from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translate(0)}}
+@keyframes exit {from{opacity:1;transform:translate(0)}to{opacity:0;transform:translateX(16px)}}
+.brick-fragment {display:none}.lane-indicator.brick-explode{animation:none;visibility:hidden}
+.placeholder-container,.placeholder-content {display:none}
+@media(prefers-reduced-motion:reduce){.visible,.appearing{animation-duration:1ms}.hiding,.exploding{animation-duration:1ms}}
+
+.lanes-container{padding:4px 0}.lane-box{height:calc((100vh - 8px)/8 - 5px);margin:2.5px 0}
+.lane-content,.lineup-content {width:calc(100% - 58px);padding:0 12px;border:1px solid #ffffff30;border-left:7px solid var(--team-primary,#72827c);border-bottom:1px solid #ffffff30;border-radius:3px}
+.lineup-info {padding:0 4px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
+.lineup-name,.swimmer-name{font-size:23px;letter-spacing:.5px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lineup-name{margin:0}.lineup-team,.result-team{font-size:13px;font-weight:700;letter-spacing:.5px;color:#fff;padding:3px 8px;background:var(--team-primary,#394c44);border-right:3px solid var(--team-secondary,#bdc7c1);border-radius:2px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lane-info{padding:0;min-width:0;gap:12px}.athlete{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1;align-items:flex-start}.swimmer-name{font-size:21px}
+.final-time{font-size:35px;font-family:Arial,sans-serif;font-weight:900;letter-spacing:-1px;min-width:156px;color:white;flex-shrink:0;font-variant-numeric:tabular-nums}
+.place-indicator{font-size:25px;min-width:52px;margin-right:10px;color:#d4ded8}.first-place .place-indicator{color:var(--gold)}.second-place .place-indicator{color:#d9e4ef}.third-place .place-indicator{color:#eeb78b}
+.lane-content.first-place{background:linear-gradient(100deg,#3f3b20,#102a20 45%);border-top-color:#e8b94988}
+.lane-indicator{right:0;width:50px;height:54px;border-radius:3px;background:#103e2d;border:1px solid #69826a;border-bottom:3px solid var(--gold);font-size:27px;color:var(--gold)}
+.split-content{right:58px;padding:0 18px;border-radius:3px}.split-time{font-size:35px;font-weight:800}.split-content:before{content:'SPLIT';font-size:11px;letter-spacing:2px;color:var(--gold);margin-right:15px}
+</style>
+</head>
+<body>
+    <!-- Placeholder shown until first data received -->
+    <div class="placeholder-container" id="placeholder">
+        <div class="placeholder-lane lineup-content visible">
+            <span class="placeholder-text">Waiting for data...</span>
+        </div>
+        <div class="placeholder-lane lineup-content visible">
+            <span class="placeholder-text">Lane overlay ready</span>
+        </div>
+    </div>
+
+    <div class="lanes-container">
+        <div class="lane-box" id="lane-8">
+            <div class="lane-indicator">8</div>
+            <div class="lineup-content" id="lineupContent-8">
+                <div class="lineup-lane" id="lineupLane-8"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-8"></span>
+                    <span class="lineup-team" id="lineupTeam-8"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-8">
+                <div class="place-indicator" id="place-8"></div>
+                <div class="lane-info">
+                    <div class="athlete"><span class="swimmer-name" id="swimmerName-8"></span><span class="result-team" id="resultTeam-8"></span></div>
+                    <span class="final-time" id="finalTime-8"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-8">
+                <span class="split-time" id="splitTime-8"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-7">
+            <div class="lane-indicator">7</div>
+            <div class="lineup-content" id="lineupContent-7">
+                <div class="lineup-lane" id="lineupLane-7"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-7"></span>
+                    <span class="lineup-team" id="lineupTeam-7"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-7">
+                <div class="place-indicator" id="place-7"></div>
+                <div class="lane-info">
+                    <div class="athlete"><span class="swimmer-name" id="swimmerName-7"></span><span class="result-team" id="resultTeam-7"></span></div>
+                    <span class="final-time" id="finalTime-7"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-7">
+                <span class="split-time" id="splitTime-7"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-6">
+            <div class="lane-indicator">6</div>
+            <div class="lineup-content" id="lineupContent-6">
+                <div class="lineup-lane" id="lineupLane-6"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-6"></span>
+                    <span class="lineup-team" id="lineupTeam-6"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-6">
+                <div class="place-indicator" id="place-6"></div>
+                <div class="lane-info">
+                    <div class="athlete"><span class="swimmer-name" id="swimmerName-6"></span><span class="result-team" id="resultTeam-6"></span></div>
+                    <span class="final-time" id="finalTime-6"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-6">
+                <span class="split-time" id="splitTime-6"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-5">
+            <div class="lane-indicator">5</div>
+            <div class="lineup-content" id="lineupContent-5">
+                <div class="lineup-lane" id="lineupLane-5"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-5"></span>
+                    <span class="lineup-team" id="lineupTeam-5"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-5">
+                <div class="place-indicator" id="place-5"></div>
+                <div class="lane-info">
+                    <div class="athlete"><span class="swimmer-name" id="swimmerName-5"></span><span class="result-team" id="resultTeam-5"></span></div>
+                    <span class="final-time" id="finalTime-5"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-5">
+                <span class="split-time" id="splitTime-5"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-4">
+            <div class="lane-indicator">4</div>
+            <div class="lineup-content" id="lineupContent-4">
+                <div class="lineup-lane" id="lineupLane-4"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-4"></span>
+                    <span class="lineup-team" id="lineupTeam-4"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-4">
+                <div class="place-indicator" id="place-4"></div>
+                <div class="lane-info">
+                    <div class="athlete"><span class="swimmer-name" id="swimmerName-4"></span><span class="result-team" id="resultTeam-4"></span></div>
+                    <span class="final-time" id="finalTime-4"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-4">
+                <span class="split-time" id="splitTime-4"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-3">
+            <div class="lane-indicator">3</div>
+            <div class="lineup-content" id="lineupContent-3">
+                <div class="lineup-lane" id="lineupLane-3"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-3"></span>
+                    <span class="lineup-team" id="lineupTeam-3"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-3">
+                <div class="place-indicator" id="place-3"></div>
+                <div class="lane-info">
+                    <div class="athlete"><span class="swimmer-name" id="swimmerName-3"></span><span class="result-team" id="resultTeam-3"></span></div>
+                    <span class="final-time" id="finalTime-3"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-3">
+                <span class="split-time" id="splitTime-3"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-2">
+            <div class="lane-indicator">2</div>
+            <div class="lineup-content" id="lineupContent-2">
+                <div class="lineup-lane" id="lineupLane-2"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-2"></span>
+                    <span class="lineup-team" id="lineupTeam-2"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-2">
+                <div class="place-indicator" id="place-2"></div>
+                <div class="lane-info">
+                    <div class="athlete"><span class="swimmer-name" id="swimmerName-2"></span><span class="result-team" id="resultTeam-2"></span></div>
+                    <span class="final-time" id="finalTime-2"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-2">
+                <span class="split-time" id="splitTime-2"></span>
+            </div>
+        </div>
+        <div class="lane-box" id="lane-1">
+            <div class="lane-indicator">1</div>
+            <div class="lineup-content" id="lineupContent-1">
+                <div class="lineup-lane" id="lineupLane-1"></div>
+                <div class="lineup-info">
+                    <span class="lineup-name" id="lineupName-1"></span>
+                    <span class="lineup-team" id="lineupTeam-1"></span>
+                </div>
+            </div>
+            <div class="lane-content" id="laneContent-1">
+                <div class="place-indicator" id="place-1"></div>
+                <div class="lane-info">
+                    <div class="athlete"><span class="swimmer-name" id="swimmerName-1"></span><span class="result-team" id="resultTeam-1"></span></div>
+                    <span class="final-time" id="finalTime-1"></span>
+                </div>
+            </div>
+            <div class="split-content" id="splitContent-1">
+                <span class="split-time" id="splitTime-1"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/overlay-core.js"></script>
+    <script src="../../js/lane-overlay.js"></script>
+    <script src="teams.js"></script>
+    <script src="lane-teams.js"></script>
+    <script>
+        if (new URLSearchParams(location.search).has('preview')) {
+            // Preview stays local to its parent; never broadcasts demo data to OBS.
+            window.previewReceive = processJaguarLanes;
+        } else {
+            SwimOverlay.init({ onData: processJaguarLanes, numLanes: 8 });
+        }
+    </script>
+</body>
+</html>
