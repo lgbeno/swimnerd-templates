@@ -199,12 +199,12 @@ Live Web Serial requires desktop Chrome/Edge and localhost or HTTPS. Finish clas
 
 ## Serial bridge
 
-[SerialBridge.html](SerialBridge.html) connects to two serial ports at once and publishes the overlay feed live, with no capture files:
+[SerialBridge.html](SerialBridge.html) takes the two things a meet needs and publishes the overlay feed live. Each has its own box on the page:
 
-| Port | Source | Settings | Provides |
+| Box | Source | Settings | Provides |
 | --- | --- | --- | --- |
-| Timer stream | CTS scoreboard output | 9600 baud, 8 data, even parity, 1 stop | running clock, lane times and places, event and heat numbers |
-| Start lists | Meet Manager generic scoreboard link | 9600 baud, 8 data, no parity, 1 stop | event title, swimmer or relay names, teams |
+| Timer stream | CTS6 scoreboard output, over serial | 9600 baud, 8 data, even parity, 1 stop | running clock, lane times and places, event and heat numbers |
+| Event data | files, or the Meet Manager generic scoreboard link over serial | 9600 baud, 8 data, no parity, 1 stop | event title, swimmer or relay names, teams |
 
 It reuses the CTS6 decoder and produces the same JSON as the simulator, so the existing overlays need no changes to display it.
 
@@ -216,9 +216,11 @@ Web Serial needs desktop Chrome or Edge and a page served from localhost or HTTP
 python3 -m http.server 8873
 ```
 
-Open `http://localhost:8873/SerialBridge.html`, connect each port, check the scoreboard preview, then tick **Publish to overlays**.
+Open `http://localhost:8873/SerialBridge.html`, connect the timer port, give the page its event data, check the scoreboard preview, then tick **Publish to overlays**.
 
-The start-list port only listens by default. It collects start lists as the scoreboard computer requests them from Meet Manager and saves them in the browser, so they survive a reload. Tick **Ask Meet Manager for the current heat** only when the adapter is wired in place of the scoreboard computer. In that mode the page transmits requests, which must never happen on a tapped live link.
+Event data can come from files, from serial, or from both. **Choose files** accepts Meet Manager start-list files (`.scb`, one per event) and captures of the scoreboard link: a `com-monitor` log or the raw bytes. **Choose folder** reads every `.scb` file in a folder. An `.scb` file replaces its whole event, a start list from a capture or from serial replaces one heat, and everything is saved in the browser until **Clear saved event data** is pressed, so clear it before loading a new meet.
+
+The Meet Manager port only listens by default. It collects start lists as the scoreboard computer requests them from Meet Manager and saves them in the browser, so they survive a reload. Tick **Ask Meet Manager for the current heat** only when the adapter is wired in place of the scoreboard computer. In that mode the page transmits requests, which must never happen on a tapped live link.
 
 ### Getting the feed into OBS
 

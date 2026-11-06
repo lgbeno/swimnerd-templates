@@ -64,6 +64,36 @@
         }
     }
 
+    /** Bytes in a com-monitor capture log, in order, with the port that sent them: [{ at, source, bytes }].
+     *  A frame starts on a "date time PORT ▶ [PORT]  hex  |text|" line; indented lines continue it. */
+    function parseLog(text) {
+        const head = /^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)\.(\d{3}) (\S+) ▶(?: \S+)? {2,}(\S.*)$/;
+        const chunks = []; let current = null;
+        for (const line of text.split(/\r?\n/)) {
+            const m = head.exec(line), more = !m && current && /^\s+(\S.*)$/.exec(line);
+            const hex = m || more ? (m ? m[9] : more[1]).split('|')[0].trim() : '';
+            if (!/^[\da-f]{2}( [\da-f]{2})*$/i.test(hex)) { current = null; continue; }
+            if (m) { current = { at: Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6], +m[7]), source: m[8], bytes: [] }; chunks.push(current); }
+            for (const byte of hex.split(' ')) current.bytes.push(parseInt(byte, 16));
+        }
+        for (const chunk of chunks) chunk.bytes = Uint8Array.from(chunk.bytes);
+        return chunks;
+    }
+
+    /** Every start list in a capture, oldest first: a com-monitor log (string) or the link's raw bytes. */
+    function readCapture(input, { source = '' } = {}) {
+        const chunks = typeof input === 'string' ? parseLog(input) : [{ at: 0, source: '', bytes: input }];
+        // One parser per sending port: a request on the other line can land in the middle of a record.
+        const parsers = new Map(), records = [];
+        for (const chunk of chunks) {
+            if (source && chunk.source !== source) continue;
+            let parser = parsers.get(chunk.source);
+            if (!parser) parsers.set(chunk.source, parser = new StreamParser());
+            for (const record of parser.feed(chunk.bytes, chunk.at)) records.push(record);
+        }
+        return records;
+    }
+
     /** Request one heat's start list, as the scoreboard computer does: STX EEE HH T EOT. */
     function request(event, heat, type = 1) {
         if (!Number.isInteger(event) || event < 1 || event > 999) throw new RangeError('Event must be 1-999');
@@ -91,6 +121,13 @@
             entry.heats[record.heat - 1] = record.lanes.map(l => ({ name: l.name, team: l.team }));
             this.version++; this._view = null;
         }
+        /** Replace one event with every heat of a Meet Manager .scb start-list file, as CTS6.parseSCB() reads it. */
+        addEvent({ event, title, heats }) {
+            this.heats -= (this.events.get(event)?.heats || []).filter(Boolean).length;
+            const entry = { event, title: title || '', heats: heats.map(h => h.map(a => ({ name: a.name, team: a.team }))) };
+            this.events.set(event, entry); this.heats += entry.heats.length;
+            this.version++; this._view = null;
+        }
         has(event, heat) { return !!this.events.get(event)?.heats[heat - 1]; }
         view({ firstLast = true } = {}) {
             if (this._view && this._view.firstLast === firstLast) return this._view.map;
@@ -115,5 +152,5 @@
             return store;
         }
     }
-    return { RECORD_LENGTH, parseRecord, StreamParser, request, displayName, RosterStore };
+    return { RECORD_LENGTH, parseRecord, StreamParser, parseLog, readCapture, request, displayName, RosterStore };
 });

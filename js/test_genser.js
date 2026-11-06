@@ -1,8 +1,8 @@
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { RECORD_LENGTH, parseRecord, StreamParser, request, displayName, RosterStore } = require('./bridge/genser');
-const { Decoder, payload } = require('./cts6/decoder');
+const { RECORD_LENGTH, parseRecord, StreamParser, parseLog, readCapture, request, displayName, RosterStore } = require('./bridge/genser');
+const { Decoder, parseSCB, payload } = require('./cts6/decoder');
 let count = 0;
 function test(name, fn) { fn(); console.log('PASS ' + name); count++; }
 // Build a record the way Meet Manager lays it out. See docs/GENSER-Serial-Protocol-Findings.md.
@@ -105,23 +105,62 @@ test('a newer start list replaces the old one; storage round trip keeps heats in
     assert.equal(RosterStore.fromJSON('nonsense').heats, 0); assert.equal(RosterStore.fromJSON([{ event: 'x' }, null]).heats, 0);
     store.clear(); assert.equal(store.heats, 0); assert.equal(store.view().size, 0);
 });
-// Optional: decode a com-monitor log of the real link. Keep captures with athlete names outside the repo.
-//   node js/test_genser.js /path/to/capture.log PORT_NAME
-if (process.argv[2]) test('capture regression: every start list in a com-monitor log decodes', () => {
-    const port = process.argv[3] || '';
-    const p = new StreamParser(), store = new RosterStore(); let listening = false, entries = 0;
-    for (const line of fs.readFileSync(process.argv[2], 'utf8').split('\n')) {
-        const m = /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{3} (\S+) \u25B6 ?(\S*)\s+((?:[0-9A-F]{2} ?)+)\s*\|/.exec(line);
-        const c = !m && /^\s{20,}((?:[0-9A-F]{2} ?)+)\s*\|/.exec(line);
-        let hex = null;
-        if (m) { listening = !port || m[1] === port; hex = (/^[0-9A-F]{2}$/.test(m[2]) ? m[2] + ' ' : '') + m[3]; }
-        else if (c) hex = c[1];
-        if (hex && listening) for (const r of p.feed(Uint8Array.from(hex.trim().split(/\s+/), h => parseInt(h, 16)))) {
-            store.add(r); entries += r.lanes.filter(l => l.name).length;
+// A capture as com-monitor writes it: 16 bytes a line, a route column 24 wide, the text between bars.
+function logText(frames) {
+    const lines = ['# com-monitor log started 2026-01-01 10:00:00.000', '2026-01-01 10:00:00.010 # PORTB: open 9600 8N1 none'];
+    for (const [ms, from, to, bytes] of frames) {
+        const stamp = `2026-01-01 10:00:${String(Math.floor(ms / 1000)).padStart(2, '0')}.${String(ms % 1000).padStart(3, '0')}`;
+        for (let i = 0; i < bytes.length; i += 16) {
+            const row = Array.from(bytes.slice(i, i + 16));
+            const hex = row.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ').padEnd(47);
+            const shown = row.map(b => b >= 0x20 && b < 0x7f ? String.fromCharCode(b) : '·').join('');
+            lines.push(`${i ? ' '.repeat(48) : stamp + ' ' + (from + ' ▶' + (to ? ' ' + to : '')).padEnd(24)}  ${hex}  |${shown}|`);
         }
     }
-    assert(p.records > 0, 'no start lists found; check the port name');
-    assert.equal(p.buffer.length, 0);
-    console.log(`  ${p.records} start lists, ${store.heats} distinct heats in ${store.events.size} events, ${entries} lane entries, ${p.requests} requests, ${p.discarded} stray bytes`);
+    return lines.join('\r\n') + '\r\n# com-monitor log closed 2026-01-01 10:05:00.000\r\n';
+}
+test('a com-monitor log gives back each frame\'s bytes, sender and time', () => {
+    const awkward = record({ event: 5, heat: 2, lanes: { 1: ['AB CD | EF 01, 0D', 'A|B'] } });     // text that looks like hex, and bars
+    const chunks = parseLog(logText([[1000, 'PORTA', 'PORTB', request(5, 2)], [1040, 'PORTB', 'PORTA', awkward], [2500, 'PORTC', '', [0x32]]]));
+    assert.deepEqual(chunks.map(c => [c.source, c.bytes.length]), [['PORTA', 8], ['PORTB', 502], ['PORTC', 1]]);
+    assert.deepEqual(Array.from(chunks[0].bytes), Array.from(request(5, 2))); assert.deepEqual(Array.from(chunks[1].bytes), Array.from(awkward));
+    assert.equal(chunks[1].at - chunks[0].at, 40); assert.equal(chunks[2].at - chunks[0].at, 1500);
+    assert.equal(parseLog('Smith, Alex --TEAM\n# just notes\n   0D 30 30\n').length, 0);      // no frame line, so nothing to continue
+});
+test('start lists are read from a capture log, or from the bytes themselves', () => {
+    // The scoreboard computer's next request is logged while Meet Manager is still sending its reply.
+    const log = logText([[0, 'PORTA', 'PORTB', request(2, 1)], [30, 'PORTB', 'PORTA', relay.subarray(0, 200)], [110, 'PORTA', 'PORTB', request(2, 2)],
+        [150, 'PORTB', 'PORTA', relay.subarray(200)], [900, 'PORTA', 'PORTB', request(88, 6)], [930, 'PORTB', 'PORTA', individual]]);
+    assert.deepEqual(readCapture(log).map(r => [r.event, r.heat]), [[2, 1], [88, 6]]);
+    assert.deepEqual(readCapture(log, { source: 'PORTB' }).map(r => r.event), [2, 88]); assert.equal(readCapture(log, { source: 'PORTA' }).length, 0);
+    assert.deepEqual(readCapture(join(request(2, 1), relay, [0x55], individual)).map(r => r.event), [2, 88]);
+    assert.equal(readCapture('not a capture').length, 0); assert.equal(readCapture(Uint8Array.of(1, 2, 3)).length, 0);
+});
+test('an .scb file replaces its whole event; a later start list replaces one heat of it', () => {
+    const slots = entries => Array.from({ length: 10 }, (_, i) => entries[i + 1] || ' -- ');
+    const scb = (event, title, ...heats) => [`#${event} ${title}`, ...heats.flatMap(slots)].join('\r\n') + '\r\n';
+    const store = new RosterStore();
+    store.add(parseRecord(individual));                                                          // event 88 heat 6, from serial
+    store.addEvent(parseSCB(scb(88, 'MIXED 50 FLY', { 4: 'Sample, Alex     --AAA' }, { 5: 'Example, Sam     --CC' })));
+    assert.equal(store.heats, 2); assert.equal(store.has(88, 6), false); assert.equal(store.has(88, 2), true);
+    store.addEvent(parseSCB(scb(3, 'BOYS 200 MEDLEY RELAY', { 3: 'TEAM B --TEAM' })));
+    assert.equal(store.heats, 3); assert.equal(store.events.size, 2);
+    assert.deepEqual(store.view().get(88).heats[0][3], { name: 'Alex Sample', team: 'AAA' });
+    assert.equal(store.view({ firstLast: false }).get(88).heats[1][4].name, 'Example, Sam'); assert.equal(store.view().get(3).heats[0][2].name, 'TEAM B');
+    store.add(parseRecord(record({ event: 88, heat: 2, title: 'Mixed 50 Fly', lanes: { 5: ['Replacement, Pat', 'ZZ'] } })));
+    assert.equal(store.heats, 3); assert.equal(store.view().get(88).heats[1][4].name, 'Pat Replacement'); assert.equal(store.view().get(88).title, 'Mixed 50 Fly');
+    const copy = RosterStore.fromJSON(JSON.parse(JSON.stringify(store)));
+    assert.equal(copy.heats, 3); assert.equal(copy.view().get(88).heats[0][3].team, 'AAA');
+    const d = new Decoder(); d.feed([...block(12, ' 88    1'), control(20)]); d.finish();
+    assert.equal(payload(d.snapshot(), store.view()).swimming.LaneAthleteTeam[3].AthleteName, 'Alex Sample');
+});
+// Optional: decode a com-monitor log of the real link. Keep captures with athlete names outside the repo.
+//   node js/test_genser.js /path/to/capture.log [PORT_NAME]
+if (process.argv[2]) test('capture regression: every start list in a com-monitor log decodes', () => {
+    const records = readCapture(fs.readFileSync(process.argv[2], 'utf8'), { source: process.argv[3] || '' }), store = new RosterStore();
+    assert(records.length > 0, 'no start lists found; check the port name');
+    for (const r of records) store.add(r);
+    const entries = records.reduce((n, r) => n + r.lanes.filter(l => l.name).length, 0);
+    console.log(`  ${records.length} start lists, ${store.heats} distinct heats in ${store.events.size} events, ${entries} lane entries`);
 });
 console.log(`${count} GENSER test groups passed`);

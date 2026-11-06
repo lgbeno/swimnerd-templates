@@ -9,20 +9,27 @@
 <body>
 <header><a href="Simulator.html">SWIMNERD / LAB</a><span class="badge">SERIAL BRIDGE</span></header>
 <main>
-<div class="intro"><div><p class="eyebrow">TWO SERIAL PORTS IN, ONE SCOREBOARD FEED OUT</p><h1>Serial bridge<span>.</span></h1><p>Reads the timing console and Meet Manager directly, and feeds the overlays.</p></div><div id="sourceStatus" role="status">No ports connected</div></div>
+<div class="intro"><div><p class="eyebrow">TIMER STREAM AND EVENT DATA IN, ONE SCOREBOARD FEED OUT</p><h1>Serial bridge<span>.</span></h1><p>Reads the timing console live, adds names from Meet Manager or from files, and feeds the overlays.</p></div><div id="sourceStatus" role="status">Timer not connected · No event data</div></div>
 <section class="inputs">
-<article><h2><span>01</span> Timer stream</h2><p>CTS scoreboard output: running clock, lane times and places, event and heat numbers. This page only listens on this port.</p>
+<article><h2><span>01</span> Timer stream</h2><p>CTS6 scoreboard output from the timing console: running clock, lane times and places, event and heat numbers. This page only listens on this port.</p>
 <div class="actions"><label>Baud <select id="timerBaud"><option>9600</option><option>2400</option><option>1200</option><option>4800</option><option>19200</option></select></label><label>Parity <select id="timerParity"><option value="even">Even</option><option value="none">None</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>
 <div class="actions"><button id="timerConnect" class="primary">Connect timer port</button><button id="timerDisconnect" disabled>Disconnect</button></div>
 <p id="timerStatus" class="small">Not connected. The console sends 9600 baud with even parity.</p></article>
-<article><h2><span>02</span> Start lists</h2><p>Meet Manager generic scoreboard link: event title, swimmer or relay names, and teams for each heat.</p>
+<article><h2><span>02</span> Event data</h2><p>The start list for each heat: event title, swimmer or relay names, and teams. Load it from files, read it from Meet Manager over serial, or both.</p>
+<h3>Load from a file</h3>
+<div class="actions"><label class="button primary">Choose files<input id="eventFiles" type="file" multiple></label><label class="button">Choose folder<input id="eventFolder" type="file" webkitdirectory multiple></label></div>
+<p id="eventFileStatus" class="small">Nothing loaded in this visit.</p>
+<p class="small">Accepts Meet Manager start-list files (.scb, one per event) and capture logs of the scoreboard link. Files stay in this browser and add to what is already saved.</p>
+<h3>Or connect to serial</h3>
+<p class="small">Meet Manager generic scoreboard link. Start lists are collected as they pass and saved.</p>
 <div class="actions"><label>Baud <select id="genserBaud"><option>9600</option><option>4800</option><option>2400</option><option>1200</option></select></label><label>Parity <select id="genserParity"><option value="none">None</option><option value="even">Even</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>
 <div class="actions"><button id="genserConnect" class="primary">Connect Meet Manager port</button><button id="genserDisconnect" disabled>Disconnect</button></div>
 <p id="genserStatus" class="small">Not connected. Tap the line that Meet Manager transmits on.</p>
 <label class="check"><input id="genserRequest" type="checkbox"> Ask Meet Manager for the current heat</label>
 <p class="small">Off: listen only, and collect start lists as the scoreboard computer requests them. On: this page transmits requests. Turn it on only when this adapter is wired in place of the scoreboard computer, never when tapping a live link.</p>
+<hr class="rule">
 <label class="check"><input id="firstLast" type="checkbox" checked> Show names as First Last</label>
-<div class="actions"><button id="clearRosters">Clear saved start lists</button><span id="rosterSummary" class="small">No start lists saved</span></div></article>
+<div class="actions"><button id="clearRosters">Clear saved event data</button><span id="rosterSummary" class="small">No event data saved</span></div></article>
 </section>
 <p id="error" role="alert" hidden></p>
 <section class="scoreboard"><div><p class="eyebrow">EVENT / HEAT</p><strong id="event">— / —</strong><p id="title">Waiting for the timer stream</p></div><div class="clock"><p class="eyebrow">CONSOLE CLOCK</p><strong id="clock">—:—.—</strong><p><span id="raceState" class="badge">UNKNOWN</span> <span id="rosterStatus" class="small">No start list</span></p></div></section>
