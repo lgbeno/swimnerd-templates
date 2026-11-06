@@ -222,6 +222,10 @@ The timer stream can also be replayed from a capture, with no port at all. **Cho
 
 Event data can come from files, from serial, or from both. **Choose files** accepts Meet Manager start-list files (`.scb`, one per event) and captures of the scoreboard link: a `com-monitor` log or the raw bytes. **Choose folder** reads every `.scb` file in a folder. An `.scb` file replaces its whole event, a start list from a capture or from serial replaces one heat, and everything is saved in the browser until **Clear saved event data** is pressed, so clear it before loading a new meet.
 
+Event data is never frozen. When a start list for a heat arrives again, over serial or from a file, it replaces the one held, so a scratch, a lane change or a late entry made in Meet Manager reaches the overlays as soon as its record crosses the link. The **Event data viewer** on the page shows every heat held for an event, lane by lane, with where it came from and when, and marks the heat the timer is on. Under it, **Recent changes** lists each replacement with the lanes that changed; start lists that arrive again unchanged are only counted.
+
+One thing serial cannot say is that a heat no longer exists: Meet Manager simply does not answer for it. A heat that was loaded from a file and later removed in Meet Manager stays until an `.scb` file for that event is loaded again or the saved data is cleared. Its source and time in the viewer show that it was never refreshed.
+
 The Meet Manager port only listens by default. It collects start lists as the scoreboard computer requests them from Meet Manager and saves them in the browser, so they survive a reload. Tick **Ask Meet Manager for the current heat** only when the adapter is wired in place of the scoreboard computer. In that mode the page transmits requests, which must never happen on a tapped live link.
 
 ### Getting the feed into OBS

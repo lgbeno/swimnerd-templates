@@ -109,48 +109,80 @@
         return m ? m[2].trim() + ' ' + m[1].trim() : name;
     }
 
-    /** Start lists by event and heat, in the shape CTS6.payload() expects for its roster map. */
+    const EMPTY_LANE = { name: '', team: '' };
+    /** Lanes that differ between two versions of a heat: [{ lane, from, to }]. */
+    function laneChanges(before, after) {
+        const out = [];
+        for (let i = 0; i < Math.max(before.length, after.length); i++) {
+            const from = before[i] || EMPTY_LANE, to = after[i] || EMPTY_LANE;
+            if (from.name !== to.name || from.team !== to.team) out.push({ lane: i + 1, from, to });
+        }
+        return out;
+    }
+
+    /** Start lists by event and heat, in the shape CTS6.payload() expects for its roster map.
+     *  The newest start list for a heat always replaces the one held, wherever each came from. */
     class RosterStore {
         constructor() { this.clear(); }
         clear() { this.events = new Map(); this.heats = 0; this.version = (this.version || 0) + 1; this._view = null; }
-        add(record) {
+        /** Store one heat's start list. `source` and `at` (ms since 1970) say where and when it came from.
+         *  Returns what that did: { event, heat, status: 'added' | 'replaced' | 'unchanged', changes, title }. */
+        add(record, source = '', at = null) {
             let entry = this.events.get(record.event);
-            if (!entry) { entry = { event: record.event, title: '', heats: [] }; this.events.set(record.event, entry); }
+            if (!entry) { entry = { event: record.event, title: '', heats: [], info: [] }; this.events.set(record.event, entry); }
+            const before = entry.heats[record.heat - 1], after = record.lanes.map(l => ({ name: l.name, team: l.team }));
+            const changes = before ? laneChanges(before, after) : [];
+            const title = record.title && entry.title && record.title !== entry.title ? { from: entry.title, to: record.title } : null;
             if (record.title) entry.title = record.title;
-            if (!entry.heats[record.heat - 1]) this.heats++;
-            entry.heats[record.heat - 1] = record.lanes.map(l => ({ name: l.name, team: l.team }));
+            if (!before) this.heats++;
+            entry.heats[record.heat - 1] = after; entry.info[record.heat - 1] = { source, at };
             this.version++; this._view = null;
+            return { event: record.event, heat: record.heat, status: !before ? 'added' : changes.length || title ? 'replaced' : 'unchanged', changes, title };
         }
-        /** Replace one event with every heat of a Meet Manager .scb start-list file, as CTS6.parseSCB() reads it. */
-        addEvent({ event, title, heats }) {
-            this.heats -= (this.events.get(event)?.heats || []).filter(Boolean).length;
-            const entry = { event, title: title || '', heats: heats.map(h => h.map(a => ({ name: a.name, team: a.team }))) };
+        /** Replace one event with every heat of a Meet Manager .scb start-list file, as CTS6.parseSCB() reads it.
+         *  Returns one result per heat, as add() does; a heat the file no longer has is 'removed'. */
+        addEvent({ event, title, heats }, source = '', at = null) {
+            const old = this.events.get(event), results = [];
+            this.heats -= (old?.heats || []).filter(Boolean).length;
+            const entry = { event, title: title || '', heats: heats.map(h => h.map(a => ({ name: a.name, team: a.team }))), info: heats.map(() => ({ source, at })) };
+            const renamed = old?.title && entry.title && old.title !== entry.title ? { from: old.title, to: entry.title } : null;
+            for (let i = 0; i < Math.max(entry.heats.length, old?.heats.length || 0); i++) {
+                const before = old?.heats[i], after = entry.heats[i];
+                if (!before && !after) continue;
+                const changes = before && after ? laneChanges(before, after) : [];
+                results.push({ event, heat: i + 1, status: !after ? 'removed' : !before ? 'added' : changes.length || renamed ? 'replaced' : 'unchanged', changes, title: renamed });
+            }
             this.events.set(event, entry); this.heats += entry.heats.length;
             this.version++; this._view = null;
+            return results;
         }
         has(event, heat) { return !!this.events.get(event)?.heats[heat - 1]; }
         view({ firstLast = true } = {}) {
             if (this._view && this._view.firstLast === firstLast) return this._view.map;
             const map = new Map();
-            for (const [event, entry] of this.events) map.set(event, { event, title: entry.title,
+            for (const [event, entry] of this.events) map.set(event, { event, title: entry.title, info: entry.info,
                 heats: entry.heats.map(h => h && h.map(a => ({ name: displayName(a.name, firstLast), team: a.team }))) });
             this._view = { firstLast, map };
             return map;
         }
-        toJSON() { return Array.from(this.events.values(), e => ({ event: e.event, title: e.title, heats: Array.from(e.heats, h => h || null) })); }
+        toJSON() {
+            return Array.from(this.events.values(), e => ({ event: e.event, title: e.title, heats: Array.from(e.heats, h => h || null), info: Array.from(e.heats, (h, i) => h && e.info[i] || null) }));
+        }
         static fromJSON(data) {
             const store = new RosterStore();
             for (const e of Array.isArray(data) ? data : []) {
                 if (!Number.isInteger(e?.event) || !Array.isArray(e.heats)) continue;
-                const entry = { event: e.event, title: String(e.title || ''), heats: [] };
+                const entry = { event: e.event, title: String(e.title || ''), heats: [], info: [] };
                 e.heats.forEach((h, i) => {
                     if (!Array.isArray(h)) return;
                     entry.heats[i] = h.map(a => ({ name: String(a?.name || ''), team: String(a?.team || '') })); store.heats++;
+                    const info = Array.isArray(e.info) ? e.info[i] : null;                      // absent in data saved by older versions
+                    entry.info[i] = { source: String(info?.source || ''), at: Number.isFinite(info?.at) ? info.at : null };
                 });
                 store.events.set(e.event, entry);
             }
             return store;
         }
     }
-    return { RECORD_LENGTH, parseRecord, StreamParser, parseLog, readCapture, request, displayName, RosterStore };
+    return { RECORD_LENGTH, parseRecord, StreamParser, parseLog, readCapture, request, displayName, laneChanges, RosterStore };
 });

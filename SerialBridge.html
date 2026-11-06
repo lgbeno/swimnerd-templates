@@ -41,6 +41,11 @@
 <p id="error" role="alert" hidden></p>
 <section class="scoreboard"><div><p class="eyebrow">EVENT / HEAT</p><strong id="event">— / —</strong><p id="title">Waiting for the timer stream</p></div><div class="clock"><p class="eyebrow">CONSOLE CLOCK</p><strong id="clock">—:—.—</strong><p><span id="raceState" class="badge">UNKNOWN</span> <span id="rosterStatus" class="small">No start list</span></p></div></section>
 <section class="lanes"><table><thead><tr><th>Lane</th><th>Swimmer / relay</th><th>Team</th><th>Displayed place</th><th>Displayed time</th><th>Source</th></tr></thead><tbody id="lanes"></tbody></table></section>
+<section class="viewer"><div class="viewer-head"><h2>Event data viewer</h2><label>Event <select id="viewEvent"></select></label><label class="check"><input id="viewFollow" type="checkbox" checked> Follow the timer</label></div>
+<p id="viewSummary" class="small">No event data yet.</p>
+<p class="small">Every heat held for the chosen event, where it came from and when. The newest start list for a heat replaces the one held, whether it arrives over serial or from a file, and each replacement is listed below.</p>
+<div id="viewHeats" class="heats"></div>
+<h3>Recent changes</h3><ol id="viewChanges" class="changes"><li>Nothing received in this visit.</li></ol></section>
 <section class="outputs"><article><h2>Overlay output</h2><p>Sends the existing Swimnerd JSON format. Keep the simulator stopped while publishing.</p>
 <label class="check"><input id="publish" type="checkbox"> Publish to overlays</label>
 <p id="publishStatus" class="small">Publishing is off.</p>

@@ -105,6 +105,35 @@ test('a newer start list replaces the old one; storage round trip keeps heats in
     assert.equal(RosterStore.fromJSON('nonsense').heats, 0); assert.equal(RosterStore.fromJSON([{ event: 'x' }, null]).heats, 0);
     store.clear(); assert.equal(store.heats, 0); assert.equal(store.view().size, 0);
 });
+test('storing a start list says what it did: added, unchanged, or replaced lane by lane', () => {
+    const store = new RosterStore(), heat = lanes => parseRecord(record({ event: 9, heat: 2, title: 'Girls 9-10 50 Back', lanes }));
+    const first = store.add(heat({ 3: ['Sample, Alex', 'AAA'], 4: ['Example, Sam', 'BBB'] }), 'E009.scb', 1000);
+    assert.equal(first.status, 'added'); assert.deepEqual(first.changes, []); assert.equal(first.event, 9); assert.equal(first.heat, 2);
+    assert.equal(store.add(heat({ 3: ['Sample, Alex', 'AAA'], 4: ['Example, Sam', 'BBB'] }), 'serial', 2000).status, 'unchanged');
+    assert.deepEqual(store.events.get(9).info[1], { source: 'serial', at: 2000 });                 // a repeat still counts as the newest
+    // A scratch in lane 3, a swap in lane 4, a late entry in lane 5.
+    const next = store.add(heat({ 4: ['Example, Sam', 'CCC'], 5: ['Newcomer, Lee', 'AAA'] }), 'serial', 3000);
+    assert.equal(next.status, 'replaced'); assert.equal(next.title, null);
+    assert.deepEqual(next.changes, [{ lane: 3, from: { name: 'Sample, Alex', team: 'AAA' }, to: { name: '', team: '' } },
+        { lane: 4, from: { name: 'Example, Sam', team: 'BBB' }, to: { name: 'Example, Sam', team: 'CCC' } },
+        { lane: 5, from: { name: '', team: '' }, to: { name: 'Newcomer, Lee', team: 'AAA' } }]);
+    assert.equal(store.view().get(9).heats[1][2].name, ''); assert.equal(store.view().get(9).heats[1][4].name, 'Lee Newcomer'); assert.equal(store.heats, 1);
+    const renamed = store.add(parseRecord(record({ event: 9, heat: 2, title: 'Girls 9-10 50 Backstroke', lanes: { 4: ['Example, Sam', 'CCC'], 5: ['Newcomer, Lee', 'AAA'] } })), 'serial', 4000);
+    assert.equal(renamed.status, 'replaced'); assert.deepEqual(renamed.changes, []); assert.deepEqual(renamed.title, { from: 'Girls 9-10 50 Back', to: 'Girls 9-10 50 Backstroke' });
+    // A file replaces the whole event: heat 1 is new, heat 2 changes, and a heat it no longer lists goes.
+    store.add(parseRecord(record({ event: 9, heat: 3, title: 'Girls 9-10 50 Backstroke', lanes: { 1: ['Gone, Robin', 'DDD'] } })), 'serial', 5000);
+    const slot = (name, team) => ({ name, team }), blank = () => Array.from({ length: 10 }, () => slot('', ''));
+    const h1 = blank(), h2 = blank(); h1[0] = slot('First, Kit', 'AAA'); h2[3] = slot('Example, Sam', 'CCC');
+    const results = store.addEvent({ event: 9, title: 'Girls 9-10 50 Backstroke', heats: [h1, h2] }, 'E009.scb', 6000);
+    assert.deepEqual(results.map(r => [r.heat, r.status, r.changes.map(c => c.lane)]), [[1, 'added', []], [2, 'replaced', [5]], [3, 'removed', []]]);
+    assert.equal(store.heats, 2); assert.equal(store.has(9, 3), false); assert.deepEqual(store.view().get(9).info[0], { source: 'E009.scb', at: 6000 });
+    assert.deepEqual(store.addEvent({ event: 9, title: 'Girls 9-10 50 Backstroke', heats: [h1, h2] }, 'E009.scb', 7000).map(r => r.status), ['unchanged', 'unchanged']);
+    // Where and when each heat came from survives saving; data saved before this was recorded still loads.
+    const copy = RosterStore.fromJSON(JSON.parse(JSON.stringify(store)));
+    assert.deepEqual(copy.events.get(9).info, [{ source: 'E009.scb', at: 7000 }, { source: 'E009.scb', at: 7000 }]);
+    const old = RosterStore.fromJSON([{ event: 4, title: 'Old', heats: [null, h2] }]);
+    assert.equal(old.heats, 1); assert.deepEqual(old.events.get(4).info[1], { source: '', at: null }); assert.equal(old.add(heat({}), 'serial', 1).status, 'added');
+});
 // A capture as com-monitor writes it: 16 bytes a line, a route column 24 wide, the text between bars.
 function logText(frames) {
     const lines = ['# com-monitor log started 2026-01-01 10:00:00.000', '2026-01-01 10:00:00.010 # PORTB: open 9600 8N1 none'];
