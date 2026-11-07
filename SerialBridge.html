@@ -14,6 +14,8 @@
 <article><h2><span>01</span> Timer</h2>
 <div class="actions"><button id="timerConnect" class="primary">Connect</button><button id="timerDisconnect" disabled>Disconnect</button><button id="timerSettings" class="quiet">Port settings…</button></div>
 <p id="timerStatus" class="small">Not connected.</p>
+<div class="readout"><div><p class="eyebrow">EVENT / HEAT</p><strong id="event">— / —</strong></div><div><p class="eyebrow">CLOCK</p><strong id="clock">—:—.—</strong></div><div><p class="eyebrow">STATE</p><span id="raceState" class="badge">UNKNOWN</span></div></div>
+<table class="data"><thead><tr><th>Lane</th><th>Place</th><th>Time</th></tr></thead><tbody id="lanes"></tbody></table>
 <dialog id="timerDialog"><form method="dialog"><h3>Timer port settings</h3><p class="small">The console sends 9600 baud, 8 data bits, even parity, 1 stop bit, and the page uses that. Change it only for a console that was set up differently.</p>
 <div class="actions"><label>Baud <select id="timerBaud"><option>9600</option><option>2400</option><option>1200</option><option>4800</option><option>19200</option></select></label><label>Parity <select id="timerParity"><option value="even">Even</option><option value="none">None</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>
 <div class="actions"><button class="primary">Done</button><button id="timerDefaults" type="button">Back to the console’s settings</button></div></form></dialog></article>
@@ -21,13 +23,13 @@
 <div class="actions"><button id="genserConnect" class="primary">Connect</button><button id="genserDisconnect" disabled>Disconnect</button><button id="genserSettings" class="quiet">Port settings…</button></div>
 <p id="genserStatus" class="small">Not connected.</p>
 <div class="actions"><label class="button">Load start lists…<input id="eventFiles" type="file" accept=".scb" multiple></label><span id="eventFileStatus" class="small"></span></div>
-<div class="actions"><span id="savedSummary" class="small">No event data saved</span><button id="clearRosters" class="quiet">Clear</button></div>
+<div class="readout"><div><p class="eyebrow">LAST RECEIVED</p><strong id="lastEvent">—</strong><p id="lastTitle" class="small">Nothing received yet</p></div><div><p class="eyebrow">STORED</p><strong id="storedEvents">0</strong><p id="storedHeats" class="small">events</p></div></div>
+<table class="data"><thead><tr><th>Lane</th><th>Swimmer / relay</th><th>Team</th></tr></thead><tbody id="startList"></tbody></table>
+<div class="actions"><button id="clearRosters" class="quiet">Clear stored event data</button></div>
 <dialog id="genserDialog"><form method="dialog"><h3>Meet Manager port settings</h3><p class="small">The scoreboard link runs at 9600 baud, 8 data bits, no parity, 1 stop bit, and the page uses that. Change it only for a link that was set up differently.</p>
 <div class="actions"><label>Baud <select id="genserBaud"><option>9600</option><option>4800</option><option>2400</option><option>1200</option></select></label><label>Parity <select id="genserParity"><option value="none">None</option><option value="even">Even</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>
 <div class="actions"><button class="primary">Done</button><button id="genserDefaults" type="button">Back to the link’s settings</button></div></form></dialog></article>
 </section>
 <p id="error" role="alert" hidden></p>
-<section class="scoreboard"><div><p class="eyebrow">EVENT / HEAT</p><strong id="event">— / —</strong><p id="title">Waiting for the timer</p></div><div class="clock"><p class="eyebrow">CONSOLE CLOCK</p><strong id="clock">—:—.—</strong><p><span id="raceState" class="badge">UNKNOWN</span></p></div></section>
-<section class="lanes"><table><thead><tr><th>Lane</th><th>Swimmer / relay</th><th>Team</th><th>Place</th><th>Time</th></tr></thead><tbody id="lanes"></tbody></table></section>
 </main><footer><a href="SerialBridge.html?simulate=1">Run with simulated ports</a></footer>
 </body></html>
