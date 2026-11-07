@@ -4,79 +4,29 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Serial bridge · Swimnerd</title>
 <link rel="stylesheet" href="css/cts6.css"><link rel="stylesheet" href="css/bridge.css">
-<script defer src="js/cts6/decoder.js"></script><script defer src="js/bridge/genser.js"></script><script defer src="js/bridge/links.js"></script><script defer src="js/bridge/simulator.js"></script><script defer src="js/bridge/app.js"></script>
+<script defer src="js/cts6/decoder.js"></script><script defer src="js/bridge/genser.js"></script><script defer src="js/bridge/simulator.js"></script><script defer src="js/bridge/app.js"></script>
 </head>
 <body>
 <header><a href="Simulator.html">SWIMNERD / LAB</a><span class="badge">SERIAL BRIDGE</span></header>
 <main>
-<div class="intro"><div><p class="eyebrow">TIMER STREAM AND EVENT DATA IN, ONE SCOREBOARD FEED OUT</p><h1>Serial bridge<span>.</span></h1><p>Reads the timing console live, adds names from Meet Manager or from files, and feeds the overlays.</p></div><div id="sourceStatus" role="status">Timer not connected · No event data</div></div>
+<div class="intro"><div><h1>Serial bridge<span>.</span></h1></div><div id="sourceStatus" role="status">Timer not connected · Event data not connected</div></div>
 <section class="inputs">
-<article><h2><span>01</span> Timer stream</h2><p>CTS6 scoreboard output from the timing console: running clock, lane times and places, event and heat numbers. Connect to the console over serial, or replay a capture of it.</p>
-<h3>Connect to serial</h3>
-<div class="actions"><button id="timerConnect" class="primary">Connect timer port</button><button id="timerDisconnect" disabled>Disconnect</button><button id="timerSettings" class="quiet">Port settings…</button></div>
+<article><h2><span>01</span> Timer</h2>
+<div class="actions"><button id="timerConnect" class="primary">Connect</button><button id="timerDisconnect" disabled>Disconnect</button><button id="timerSettings" class="quiet">Port settings…</button></div>
 <p id="timerStatus" class="small">Not connected.</p>
-<p class="small">This page only listens on this port.</p>
 <dialog id="timerDialog"><form method="dialog"><h3>Timer port settings</h3><p class="small">The console sends 9600 baud, 8 data bits, even parity, 1 stop bit, and the page uses that. Change it only for a console that was set up differently.</p>
 <div class="actions"><label>Baud <select id="timerBaud"><option>9600</option><option>2400</option><option>1200</option><option>4800</option><option>19200</option></select></label><label>Parity <select id="timerParity"><option value="even">Even</option><option value="none">None</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>
-<div class="actions"><button class="primary">Done</button><button id="timerDefaults" type="button">Back to the console’s settings</button></div></form></dialog>
-<h3>Or replay a capture</h3>
-<div class="actions"><label class="button primary">Choose file<input id="timerFile" type="file"></label><button id="timerPlay" disabled>Play</button><button id="timerRestart" disabled>Restart</button><button id="timerClose" disabled>Close</button><label>Speed <select id="timerSpeed"><option value="0.25">¼×</option><option value="1" selected>1×</option><option value="4">4×</option><option value="16">16×</option></select></label><output id="timerPosition">00:00 / 00:00</output></div>
-<label class="scrubber">Capture position<input id="timerSeek" type="range" min="0" max="1" value="0" disabled></label>
-<p id="timerFileStatus" class="small">No capture loaded.</p>
-<p class="small">Accepts a serial monitor CSV export such as CTS6_Capture.csv, or a com-monitor log recorded at the console's settings. A capture plays at the pace it was recorded and feeds everything below as the port would.</p></article>
-<article><h2><span>02</span> Event data</h2><p>The start list for each heat: event title, swimmer or relay names, and teams. Load it from files, read it from Meet Manager over serial, or both.</p>
-<h3>Load from a file</h3>
-<div class="actions"><label class="button primary">Choose files<input id="eventFiles" type="file" multiple></label><label class="button">Choose folder<input id="eventFolder" type="file" webkitdirectory multiple></label></div>
-<p id="eventFileStatus" class="small">Nothing loaded in this visit.</p>
-<p class="small">Accepts Meet Manager start-list files (.scb, one per event) and capture logs of the scoreboard link. Files stay in this browser and add to what is already saved.</p>
-<h3>Or connect to serial</h3>
-<p class="small">Meet Manager generic scoreboard link. Start lists are collected as they pass and saved.</p>
-<div class="actions"><button id="genserConnect" class="primary">Connect Meet Manager port</button><button id="genserDisconnect" disabled>Disconnect</button><button id="genserSettings" class="quiet">Port settings…</button></div>
-<p id="genserStatus" class="small">Not connected. Tap the line that Meet Manager transmits on.</p>
+<div class="actions"><button class="primary">Done</button><button id="timerDefaults" type="button">Back to the console’s settings</button></div></form></dialog></article>
+<article><h2><span>02</span> Event data</h2>
+<div class="actions"><button id="genserConnect" class="primary">Connect</button><button id="genserDisconnect" disabled>Disconnect</button><button id="genserSettings" class="quiet">Port settings…</button></div>
+<p id="genserStatus" class="small">Not connected.</p>
+<div class="actions"><span id="savedSummary" class="small">No event data saved</span><button id="clearRosters" class="quiet">Clear</button></div>
 <dialog id="genserDialog"><form method="dialog"><h3>Meet Manager port settings</h3><p class="small">The scoreboard link runs at 9600 baud, 8 data bits, no parity, 1 stop bit, and the page uses that. Change it only for a link that was set up differently.</p>
 <div class="actions"><label>Baud <select id="genserBaud"><option>9600</option><option>4800</option><option>2400</option><option>1200</option></select></label><label>Parity <select id="genserParity"><option value="none">None</option><option value="even">Even</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>
-<div class="actions"><button class="primary">Done</button><button id="genserDefaults" type="button">Back to the link’s settings</button></div></form></dialog>
-<label class="check"><input id="genserRequest" type="checkbox"> Ask Meet Manager for the current heat</label>
-<p class="small">Off: listen only, and collect start lists as the scoreboard computer requests them. On: this page transmits requests. Turn it on only when this adapter is wired in place of the scoreboard computer, never when tapping a live link.</p>
-<hr class="rule">
-<label class="check"><input id="firstLast" type="checkbox" checked> Show names as First Last</label>
-<div class="actions"><button id="clearRosters">Clear saved event data</button><span id="rosterSummary" class="small">No event data saved</span></div></article>
+<div class="actions"><button class="primary">Done</button><button id="genserDefaults" type="button">Back to the link’s settings</button></div></form></dialog></article>
 </section>
 <p id="error" role="alert" hidden></p>
-<section class="scoreboard"><div><p class="eyebrow">EVENT / HEAT</p><strong id="event">— / —</strong><p id="title">Waiting for the timer stream</p></div><div class="clock"><p class="eyebrow">CONSOLE CLOCK</p><strong id="clock">—:—.—</strong><p><span id="raceState" class="badge">UNKNOWN</span> <span id="rosterStatus" class="small">No start list</span></p></div></section>
-<section class="lanes"><table><thead><tr><th>Lane</th><th>Swimmer / relay</th><th>Team</th><th>Displayed place</th><th>Displayed time</th><th>Source</th></tr></thead><tbody id="lanes"></tbody></table></section>
-<section class="viewer"><div class="viewer-head"><h2>Event data viewer</h2><label>Event <select id="viewEvent"></select></label><label class="check"><input id="viewFollow" type="checkbox" checked> Follow the timer</label></div>
-<p id="viewSummary" class="small">No event data yet.</p>
-<p class="small">Every heat held for the chosen event, where it came from and when. The newest start list for a heat replaces the one held, whether it arrives over serial or from a file, and each replacement is listed below.</p>
-<div id="viewHeats" class="heats"></div>
-<h3>Recent changes</h3><ol id="viewChanges" class="changes"><li>Nothing received in this visit.</li></ol></section>
-<section class="outputs"><article><h2>Overlay output</h2><p>Sends the existing Swimnerd JSON format. Keep the simulator stopped while publishing.</p>
-<label class="check"><input id="publish" type="checkbox"> Publish to overlays</label>
-<p id="publishStatus" class="small">Publishing is off.</p>
-<p class="small">Overlay tabs in this browser receive the feed directly. OBS needs one of the two links below, because a web page cannot accept WebSocket connections itself.</p>
-<h3>WebSocket relay</h3>
-<div class="actions"><label>Address <input id="relayUrl" type="url" value="ws://localhost:8080/"></label><button id="relay">Connect relay</button></div>
-<p id="relayStatus" class="small">Not connected. Run the relay in websocket-test-server on the OBS machine.</p>
-<h3>OBS directly, no relay</h3>
-<div class="actions"><label>Address <input id="obsUrl" type="url" value="ws://localhost:4455/"></label><label>Password <input id="obsPassword" type="password" autocomplete="off" size="14"></label><button id="obs">Connect OBS</button></div>
-<p id="obsStatus" class="small">Not connected. In OBS: Tools → WebSocket Server Settings → Enable WebSocket server.</p>
-<hr class="rule">
-<label class="check"><input id="finals" type="checkbox"> Experimental: treat placed times as finishes</label><label class="check"><input id="resetState" type="checkbox"> Experimental: allow reset-dot inference to signal idle</label>
-<p class="small">Off by default: unverified finishes are exported as splits; reset and unknown states block spooky animations.</p>
-<button id="export">Download current JSON</button></article>
-<article><h2>Bridge health</h2><dl>
-<div><dt>Timer bytes received</dt><dd id="bytes">0</dd></div>
-<div><dt>Timer blocks decoded</dt><dd id="blocks">0</dd></div>
-<div><dt>Clock updates per second</dt><dd id="clockRate">—</dd></div>
-<div><dt>Longest gap between clock updates</dt><dd id="clockGap">—</dd></div>
-<div><dt>Tenths missing from the clock</dt><dd id="clockSkipped">0</dd></div>
-<div><dt>Serial read errors, timer / start lists</dt><dd id="readErrors">0 / 0</dd></div>
-<div><dt>Start-list bytes received</dt><dd id="gBytes">0</dd></div>
-<div><dt>Start lists decoded</dt><dd id="gRecords">0</dd></div>
-<div><dt>Bytes not part of a start list</dt><dd id="gDiscarded">0</dd></div>
-<div><dt>Messages published</dt><dd id="sent">0</dd></div></dl>
-<p id="genserLast" class="small">No start list received yet.</p>
-<p class="small">Clock figures cover the last 10 seconds. The console sends the clock ten times a second, so a healthy feed shows about 10 per second, gaps near 100 ms, and no missing tenths.</p></article></section>
-<details><summary>Raw channel inspector</summary><pre id="channels"></pre></details><details><summary>Current overlay JSON</summary><pre id="json"></pre></details>
-</main><footer>Serial bridge · <a href="CTS6.html">Capture replay and decoder lab</a> · <a href="docs/GENSER-Serial-Protocol-Findings.md">Meet Manager link notes</a> · <a href="SerialBridge.html?simulate=1">Run with simulated ports</a></footer>
+<section class="scoreboard"><div><p class="eyebrow">EVENT / HEAT</p><strong id="event">— / —</strong><p id="title">Waiting for the timer</p></div><div class="clock"><p class="eyebrow">CONSOLE CLOCK</p><strong id="clock">—:—.—</strong><p><span id="raceState" class="badge">UNKNOWN</span></p></div></section>
+<section class="lanes"><table><thead><tr><th>Lane</th><th>Swimmer / relay</th><th>Team</th><th>Place</th><th>Time</th></tr></thead><tbody id="lanes"></tbody></table></section>
+</main><footer><a href="SerialBridge.html?simulate=1">Run with simulated ports</a></footer>
 </body></html>

@@ -199,14 +199,16 @@ Live Web Serial requires desktop Chrome/Edge and localhost or HTTPS. Finish clas
 
 ## Serial bridge
 
-[SerialBridge.html](SerialBridge.html) takes the two things a meet needs and publishes the overlay feed live. Each has its own box on the page:
+[SerialBridge.html](SerialBridge.html) reads the two things a meet needs and feeds the overlays. Each has a box with a Connect button:
 
-| Box | Source | Settings | Provides |
-| --- | --- | --- | --- |
-| Timer stream | CTS6 scoreboard output, over serial or replayed from a capture | 9600 baud, 8 data, even parity, 1 stop | running clock, lane times and places, event and heat numbers |
-| Event data | files, or the Meet Manager generic scoreboard link over serial | 9600 baud, 8 data, no parity, 1 stop | event title, swimmer or relay names, teams |
+| Box | Reads | Provides |
+| --- | --- | --- |
+| Timer | the CTS6 scoreboard output of the timing console | running clock, lane times and places, event and heat numbers |
+| Event data | the Meet Manager generic scoreboard link | event title, swimmer or relay names, teams |
 
-It reuses the CTS6 decoder and produces the same JSON as the simulator, so the existing overlays need no changes to display it.
+The page knows the settings each link uses (9600 8E1 for the console, 9600 8N1 for Meet Manager), so connecting is one click. **Port settings…** opens a dialog for the rare console or link set up differently; the status line then says what the port is set to. Start lists collected from Meet Manager are saved in the browser until **Clear** is pressed, so clear them before a new meet. The page only listens on both ports.
+
+Everything decoded shows on the page: event and heat, the console clock, and each lane's name, team, place and time. Overlay tabs in the same browser receive the feed on the `swimnerd-scoreboard` BroadcastChannel whenever the timer is connected. Capture replay, loading event data from files, the WebSocket relay and the OBS link are not on this page yet; they are being added back one block at a time.
 
 ### Running it
 
@@ -216,45 +218,11 @@ Web Serial needs desktop Chrome or Edge and a page served from localhost or HTTP
 python3 -m http.server 8873
 ```
 
-Open `http://localhost:8873/SerialBridge.html`, connect the timer port, give the page its event data, check the scoreboard preview, then tick **Publish to overlays**.
-
-Connecting a port is one click: the page already uses the settings in the table above, since neither link is ever set up differently in practice. **Port settings…** opens a dialog for the rare console or link that is, and the status line then says what the port is set to.
-
-The timer stream can also be replayed from a capture, with no port at all. **Choose file** in the Timer stream box accepts a serial monitor CSV export such as `CTS6_Capture.csv`, or a `com-monitor` log, and **Play** then feeds the page as the port would: the scoreboard preview, the health readout and publishing all run from it. Bytes are handed out at line rate ahead of each recorded timestamp, so the clock ticks tenth by tenth even when the recording stamped several ticks at once; gaps in the health readout are only as fine as the recording. A capture must have been recorded at the console's own settings. One taken with the wrong parity has no readable clock and is refused, because the damage cannot be undone afterwards.
-
-Event data can come from files, from serial, or from both. **Choose files** accepts Meet Manager start-list files (`.scb`, one per event) and captures of the scoreboard link: a `com-monitor` log or the raw bytes. **Choose folder** reads every `.scb` file in a folder. An `.scb` file replaces its whole event, a start list from a capture or from serial replaces one heat, and everything is saved in the browser until **Clear saved event data** is pressed, so clear it before loading a new meet.
-
-Event data is never frozen. When a start list for a heat arrives again, over serial or from a file, it replaces the one held, so a scratch, a lane change or a late entry made in Meet Manager reaches the overlays as soon as its record crosses the link. The **Event data viewer** on the page shows every heat held for an event, lane by lane, with where it came from and when, and marks the heat the timer is on. Under it, **Recent changes** lists each replacement with the lanes that changed; start lists that arrive again unchanged are only counted.
-
-One thing serial cannot say is that a heat no longer exists: Meet Manager simply does not answer for it. A heat that was loaded from a file and later removed in Meet Manager stays until an `.scb` file for that event is loaded again or the saved data is cleared. Its source and time in the viewer show that it was never refreshed.
-
-The Meet Manager port only listens by default. It collects start lists as the scoreboard computer requests them from Meet Manager and saves them in the browser, so they survive a reload. Tick **Ask Meet Manager for the current heat** only when the adapter is wired in place of the scoreboard computer. In that mode the page transmits requests, which must never happen on a tapped live link.
-
-### Getting the feed into OBS
-
-A web page can open WebSocket connections but cannot accept them, so the bridge cannot be a WebSocket server by itself. Something else has to sit between the page and an OBS Browser Source. Three outputs are available, and they can be used together:
-
-| Output | Reaches | Needs |
-| --- | --- | --- |
-| BroadcastChannel | overlay tabs in the same browser profile | nothing |
-| WebSocket relay | any machine that can reach the relay | `websocket-test-server` running; overlays connect to `ws://localhost:8080/`, so run it on the OBS machine |
-| OBS directly | every Browser Source in that OBS | OBS 28 or newer, with **Tools → WebSocket Server Settings → Enable WebSocket server** |
-
-The direct route uses the WebSocket server built into OBS. The bridge logs in and sends each update with the obs-browser `emit_event` request, and OBS hands it to every Browser Source as a `swimnerd-scoreboard` window event, which `js/overlay-core.js` listens for. No relay process is needed. Enter the OBS machine's address, for example `ws://192.168.1.20:4455/`, and the password shown in the OBS settings dialog.
-
-Serve the page from localhost when OBS is on another machine. A page loaded over HTTPS, such as the GitHub Pages copy, may only open `ws://` connections to localhost.
-
-### Health readout
-
-The page shows how many clock updates arrive per second, the longest gap between them, and how many tenths were missing. The console sends the clock ten times a second, so a healthy feed reads about 10 per second with gaps near 100 ms. Serial read errors are counted per port. A wrong parity setting shows up as bytes arriving while nothing decodes.
+Open `http://localhost:8873/SerialBridge.html`, press **Connect** in each box and pick its port.
 
 ### Trying it without hardware
 
-Open `http://localhost:8873/SerialBridge.html?simulate=1`, or follow **Run with simulated ports** at the foot of the page. Both connect buttons then open a made-up device in place of a real port: a timing console running a five-heat meet on a loop of about five minutes, and Meet Manager sending the start lists for it. Each heat sits at 0:00.0 for 8 seconds, runs with a split and a finish per lane, then holds the results for 8 seconds. Ticking **Ask Meet Manager for the current heat** makes the simulated Meet Manager answer the page's own requests. `CTS6.html?simulate=1` offers the timer port alone.
-
-Everything downstream of the port is the real page: decoding, the health readout, publishing to overlays, the relay and OBS. A banner marks the page as simulated, and simulated start lists are saved apart from real ones. All names are invented.
-
-The bytes come from `js/bridge/simulator.js`, which is written from this project's own reading of the two protocols. It shows that the page works, not that the reading is right. Splits are sent without a place, format data carries only the reset dot, and wrong baud or parity settings have no effect.
+Open `http://localhost:8873/SerialBridge.html?simulate=1`, or follow **Run with simulated ports** at the foot of the page. Both Connect buttons then open a made-up meet that repeats; a banner marks the page as simulated and its start lists are kept apart from real ones. The bytes come from `js/bridge/simulator.js`, which is written from this project's own reading of the two protocols: it shows that the page works, not that the reading is right.
 
 ```bash
 node js/test_serial_simulator.js
@@ -262,7 +230,7 @@ node js/test_serial_simulator.js
 
 ### Status
 
-The decoders are tested against real captures of both links. The page is tested in a browser with mocked serial ports, the relay, and a stand-in for the OBS WebSocket server written from the protocol documentation. It has not yet been run against the physical ports or a real OBS instance. See [Meet Manager link findings](docs/GENSER-Serial-Protocol-Findings.md) for what the start-list decoding does and does not cover.
+The decoders are tested against real captures of both links, and the page has read a live Meet Manager link. See [Meet Manager link findings](docs/GENSER-Serial-Protocol-Findings.md) for what the start-list decoding does and does not cover.
 
 ```bash
 node js/test_genser.js
