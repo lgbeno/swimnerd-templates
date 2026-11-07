@@ -173,7 +173,6 @@
                 : parser.bytes ? 'Connected · bytes arriving, no start list yet' : 'Connected · waiting for Meet Manager', 'genser');
         }
         $('clearRosters').hidden = !rosters.heats && !last;
-        $('sourceStatus').textContent = (timer.connected ? 'Timer connected' : 'Timer not connected') + ' · ' + (genser.connected ? 'Event data connected' : 'Event data not connected');
     }
 
     // ---- settings ------------------------------------------------------------------------
