@@ -8,4 +8,4 @@ dialog{background:var(--card);color:#edf4fb;border:1px solid var(--line);border-
 .latch{padding:8px 12px;margin-left:8px}.latch[aria-pressed="true"]{background:var(--accent);color:#10261f;border-color:var(--accent)}
 .inputs{grid-template-columns:1fr 2fr}@media(max-width:800px){.inputs{grid-template-columns:1fr}}
 .count{color:var(--muted);font-weight:500;letter-spacing:0;margin-left:6px;text-transform:none}
-.event-title{font-size:20px;margin:18px 0 4px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.event-title{font-size:20px;margin:18px 0 4px;letter-spacing:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
