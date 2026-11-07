@@ -185,6 +185,9 @@
         // The Show latest latch: lit while following, off while the user is looking at something else.
         $('follow').setAttribute('aria-pressed', String(following));
         $('saveFiles').disabled = !rosters.events.size;
+        $('eventsLoaded').textContent = rosters.events.size;
+        $('heatsLoaded').textContent = rosters.heats ? plural(rosters.heats, 'heat') : 'no heats';
+        $('lastNo').textContent = lastStartList ? `${lastStartList.event} / ${lastStartList.heat}` : '— / —';
         const support = 'serial' in navigator;
         for (const [prefix, link] of [['timer', timer], ['genser', genser]]) {
             $(prefix + 'Connect').disabled = !support || link.connected || link.opening;
@@ -228,6 +231,8 @@
     }
     $('eventFiles').onchange = e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length) loadEventFiles(files); };
     $('saveFiles').onclick = saveEventFiles;
+    $('timerView').onclick = () => $('timerData').showModal();
+    $('eventView').onclick = () => $('eventData').showModal();
     // Stepping the event goes through the events stored; typing a number shows that event, stored or not.
     const storedEvents = () => [...rosters.events.keys()].sort((a, b) => a - b);
     const heatsIn = event => rosters.events.get(event)?.heats.length || 1;

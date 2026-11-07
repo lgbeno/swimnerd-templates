@@ -12,19 +12,25 @@
 <article><h2><span>01</span> Timer</h2>
 <div class="actions"><button id="timerConnect" class="primary">Connect</button><button id="timerDisconnect" disabled>Disconnect</button><button id="timerSettings" class="quiet">Port settings…</button></div>
 <p id="timerStatus" class="small">Not connected.</p>
-<div class="readout"><div><p class="eyebrow">EVENT / HEAT</p><strong id="event">— / —</strong></div><div><p class="eyebrow">CLOCK</p><strong id="clock">—:—.—</strong></div><div><p class="eyebrow">STATE</p><span id="raceState" class="badge">UNKNOWN</span></div></div>
+<div class="readout"><div><p class="eyebrow">CLOCK</p><strong id="clock">—:—.—</strong></div><div><p class="eyebrow">EVENT / HEAT</p><strong id="event">— / —</strong></div><div><p class="eyebrow">STATE</p><span id="raceState" class="badge">UNKNOWN</span></div></div>
+<div class="actions"><button id="timerView">View data</button></div>
+<dialog id="timerData" class="wide"><form method="dialog"><h3>Timer lanes</h3>
 <table class="data"><thead><tr><th>Lane</th><th>Place</th><th>Time</th></tr></thead><tbody id="lanes"></tbody></table>
+<div class="actions"><button class="primary">Close</button></div></form></dialog>
 <dialog id="timerDialog"><form method="dialog"><h3>Timer port settings</h3><p class="small">The console sends 9600 baud, 8 data bits, even parity, 1 stop bit, and the page uses that. Change it only for a console that was set up differently.</p>
 <div class="actions"><label>Baud <select id="timerBaud"><option>9600</option><option>2400</option><option>1200</option><option>4800</option><option>19200</option></select></label><label>Parity <select id="timerParity"><option value="even">Even</option><option value="none">None</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>
 <div class="actions"><button class="primary">Done</button><button id="timerDefaults" type="button">Back to the console’s settings</button></div></form></dialog></article>
 <article><h2><span>02</span> Event data</h2>
 <div class="actions"><button id="genserConnect" class="primary">Connect</button><button id="genserDisconnect" disabled>Disconnect</button><button id="genserSettings" class="quiet">Port settings…</button></div>
 <p id="genserStatus" class="small">Not connected.</p>
-<div class="readout"><div><p class="eyebrow">EVENT <span id="storedEvents" class="count"></span></p><div class="stepper"><button id="eventDown" class="step" title="Previous stored event">−</button><input id="viewEventNo" type="number" min="1" max="999" aria-label="Event"><button id="eventUp" class="step" title="Next stored event">+</button></div></div>
-<div><p class="eyebrow">HEAT <span id="heatCount" class="count"></span></p><div class="stepper"><button id="heatDown" class="step" title="Previous heat">−</button><input id="viewHeatNo" type="number" min="1" max="99" aria-label="Heat"><button id="heatUp" class="step" title="Next heat">+</button><button id="follow" class="latch" aria-pressed="true" title="Jump to each start list as it arrives">Show latest</button></div></div></div>
+<div class="readout"><div><p class="eyebrow">EVENTS LOADED</p><strong id="eventsLoaded">0</strong><p id="heatsLoaded" class="small">no heats</p></div><div><p class="eyebrow">LAST RECEIVED</p><strong id="lastNo">— / —</strong><p class="small">event / heat</p></div></div>
+<div class="actions"><button id="eventView">View data</button><label class="button">Load<input id="eventFiles" type="file" accept=".scb" multiple></label><button id="saveFiles">Save</button><button id="clearRosters">Clear</button><span id="eventFileStatus" class="small"></span></div>
+<dialog id="eventData" class="wide"><form method="dialog"><h3>Start lists</h3>
+<div class="readout"><div><p class="eyebrow">EVENT <span id="storedEvents" class="count"></span></p><div class="stepper"><button id="eventDown" class="step" type="button" title="Previous stored event">−</button><input id="viewEventNo" type="number" min="1" max="999" aria-label="Event"><button id="eventUp" class="step" type="button" title="Next stored event">+</button></div></div>
+<div><p class="eyebrow">HEAT <span id="heatCount" class="count"></span></p><div class="stepper"><button id="heatDown" class="step" type="button" title="Previous heat">−</button><input id="viewHeatNo" type="number" min="1" max="99" aria-label="Heat"><button id="heatUp" class="step" type="button" title="Next heat">+</button><button id="follow" class="latch" type="button" aria-pressed="true" title="Jump to each start list as it arrives">Show latest</button></div></div></div>
 <h3 id="viewTitle" class="event-title">No event data</h3>
 <table class="data"><thead><tr><th>Lane</th><th>Swimmer / relay</th><th>Team</th></tr></thead><tbody id="startList"></tbody></table>
-<div class="actions"><label class="button">Load<input id="eventFiles" type="file" accept=".scb" multiple></label><button id="saveFiles">Save</button><button id="clearRosters">Clear</button><span id="eventFileStatus" class="small"></span></div>
+<div class="actions"><button class="primary">Close</button></div></form></dialog>
 <dialog id="genserDialog"><form method="dialog"><h3>Meet Manager port settings</h3><p class="small">The scoreboard link runs at 9600 baud, 8 data bits, no parity, 1 stop bit, and the page uses that. Change it only for a link that was set up differently.</p>
 <div class="actions"><label>Baud <select id="genserBaud"><option>9600</option><option>4800</option><option>2400</option><option>1200</option></select></label><label>Parity <select id="genserParity"><option value="none">None</option><option value="even">Even</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>
 <div class="actions"><button class="primary">Done</button><button id="genserDefaults" type="button">Back to the link’s settings</button></div></form></dialog></article>
