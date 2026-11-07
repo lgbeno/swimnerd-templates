@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { Decoder, Replay, Pacer, parseSCB, parseCapture, clockSteps, payload } = require('./cts6/decoder');
+const { Decoder, Replay, Pacer, parseSCB, formatSCB, parseCapture, clockSteps, payload } = require('./cts6/decoder');
 let count = 0;
 function test(name, fn) { fn(); console.log('PASS ' + name); count++; }
 const control = (channel, format = false, universal = false) => 128 | ((channel ^ 31) << 1) | Number(format) | (universal ? 64 : 0);
@@ -128,5 +128,20 @@ if (process.argv[2]) test('weekend capture and SCB archive regression', () => {
     assert.equal(rosters.size, 75); assert.equal(rosters.get(79).heats.length, 2);
     assert.equal(payload(s, rosters).swimming.EventName, 'MIXED 13&O 200 FREE RELAY');
     console.log('  Events ' + events.join(', ') + '; ' + chunks.length + ' chunks; all 75 SCB files parsed.');
+});
+test('formatSCB writes what parseSCB reads, in Meet Manager\'s layout', () => {
+    const lane = (name, team) => ({ name, team }), empty = lane('', '');
+    const heat1 = [empty, lane('Doe, Ada', 'ASC'), lane('Featherstonehaugh, Jo', 'WAVE'), ...Array(7).fill(empty)];
+    const text = formatSCB({ event: 7, title: ' Girls 9-10 50 Fly ', heats: [heat1, null, [lane('Lee, Di', 'HSSB'), ...Array(9).fill(empty)]] });
+    const lines = text.split('\r\n');
+    assert.equal(lines[0], '#7 Girls 9-10 50 Fly'); assert.equal(lines.length, 32); assert.equal(lines.at(-1), '');
+    lines.slice(1, 31).forEach(l => { assert.equal(l.length, 38); assert.equal(l.indexOf('--'), 20); });
+    const back = parseSCB(text);
+    assert.equal(back.event, 7); assert.equal(back.title, 'Girls 9-10 50 Fly'); assert.equal(back.heats.length, 3);
+    assert.deepEqual(back.heats[0][1], lane('Doe, Ada', 'ASC'));
+    assert.equal(back.heats[0][2].name, 'Featherstonehaugh, J');                  // names are cut to 20 characters, as on the wire
+    assert(back.heats[1].every(a => !a.name && !a.team), 'a missing heat is written empty');
+    assert.deepEqual(back.heats[2][0], lane('Lee, Di', 'HSSB'));
+    assert.equal(parseSCB(formatSCB({ event: 3, title: '', heats: [null] })).title, 'Event 3');
 });
 console.log(`${count} CTS6 test groups passed`);
