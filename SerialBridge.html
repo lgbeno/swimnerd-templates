@@ -20,6 +20,7 @@
 <article><h2><span>02</span> Event data</h2>
 <div class="actions"><button id="genserConnect" class="primary">Connect</button><button id="genserDisconnect" disabled>Disconnect</button><button id="genserSettings" class="quiet">Port settings…</button></div>
 <p id="genserStatus" class="small">Not connected.</p>
+<div class="actions"><label class="button">Load start lists…<input id="eventFiles" type="file" accept=".scb" multiple></label><span id="eventFileStatus" class="small"></span></div>
 <div class="actions"><span id="savedSummary" class="small">No event data saved</span><button id="clearRosters" class="quiet">Clear</button></div>
 <dialog id="genserDialog"><form method="dialog"><h3>Meet Manager port settings</h3><p class="small">The scoreboard link runs at 9600 baud, 8 data bits, no parity, 1 stop bit, and the page uses that. Change it only for a link that was set up differently.</p>
 <div class="actions"><label>Baud <select id="genserBaud"><option>9600</option><option>4800</option><option>2400</option><option>1200</option></select></label><label>Parity <select id="genserParity"><option value="none">None</option><option value="even">Even</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>

@@ -206,9 +206,9 @@ Live Web Serial requires desktop Chrome/Edge and localhost or HTTPS. Finish clas
 | Timer | the CTS6 scoreboard output of the timing console | running clock, lane times and places, event and heat numbers |
 | Event data | the Meet Manager generic scoreboard link | event title, swimmer or relay names, teams |
 
-The page knows the settings each link uses (9600 8E1 for the console, 9600 8N1 for Meet Manager), so connecting is one click. **Port settings…** opens a dialog for the rare console or link set up differently; the status line then says what the port is set to. Start lists collected from Meet Manager are saved in the browser until **Clear** is pressed, so clear them before a new meet. The page only listens on both ports.
+The page knows the settings each link uses (9600 8E1 for the console, 9600 8N1 for Meet Manager), so connecting is one click. **Port settings…** opens a dialog for the rare console or link set up differently; the status line then says what the port is set to. **Load start lists…** reads Meet Manager start-list files (`.scb`, one per event; select them all at once), and each file replaces its whole event. Start lists from files and from Meet Manager are saved in the browser until **Clear** is pressed, so clear them before a new meet. The page only listens on both ports.
 
-Everything decoded shows on the page: event and heat, the console clock, and each lane's name, team, place and time. Overlay tabs in the same browser receive the feed on the `swimnerd-scoreboard` BroadcastChannel whenever the timer is connected. Capture replay, loading event data from files, the WebSocket relay and the OBS link are not on this page yet; they are being added back one block at a time.
+Everything decoded shows on the page: event and heat, the console clock, and each lane's name, team, place and time. Overlay tabs in the same browser receive the feed on the `swimnerd-scoreboard` BroadcastChannel whenever the timer is connected. Capture replay, the WebSocket relay and the OBS link are not on this page yet; they are being added back one block at a time.
 
 ### Running it
 

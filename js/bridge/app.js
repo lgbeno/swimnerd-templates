@@ -96,6 +96,24 @@
         if (records.length) { saveRosters(); publish(); }
     }
     const genser = new SerialLink(onGenserChunk, () => parser.reset(), () => {});
+    /** Load Meet Manager start-list files (.scb, one event each). A file replaces its whole event. */
+    async function loadEventFiles(files) {
+        hideError();
+        const failed = [], at = Date.now();
+        let events = 0, heats = 0;
+        for (const file of files) {
+            try {
+                if (!/\.scb$/i.test(file.name)) throw new Error('not an .scb file');
+                if (file.size > 5 * 1024 * 1024) throw new Error('larger than 5 MB');
+                const roster = CTS6.parseSCB(new TextDecoder('windows-1252').decode(await file.arrayBuffer()));
+                rosters.addEvent(roster, file.name, at); events++; heats += roster.heats.length;
+            } catch (e) { failed.push(`${file.name} (${e.message || e})`); }
+        }
+        if (events) { saveRosters(); lastSent = ''; publish(); }
+        $('eventFileStatus').textContent = events ? `Loaded ${plural(events, 'event')}, ${plural(heats, 'heat')}.` : 'Nothing loaded.';
+        if (failed.length) showError(new Error('Could not read ' + failed.slice(0, 5).join('; ') + (failed.length > 5 ? `; and ${failed.length - 5} more` : '')));
+        render();
+    }
 
     // ---- output --------------------------------------------------------------------------
     function publish() {
@@ -170,7 +188,8 @@
         $(prefix + 'Dialog').onclose = render;
         [$(prefix + 'Baud'), $(prefix + 'Parity')].forEach(s => s.addEventListener('change', () => { saveSettings(); render(); }));
     }
-    $('clearRosters').onclick = () => { rosters.clear(); lastRecord = null; try { localStorage.removeItem(ROSTERS); } catch (e) { /* storage blocked */ } lastSent = ''; render(); };
+    $('eventFiles').onchange = e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length) loadEventFiles(files); };
+    $('clearRosters').onclick = () => { rosters.clear(); lastRecord = null; $('eventFileStatus').textContent = ''; try { localStorage.removeItem(ROSTERS); } catch (e) { /* storage blocked */ } lastSent = ''; render(); };
     if (!('serial' in navigator)) {
         $('timerStatus').textContent = $('genserStatus').textContent = 'Web Serial is not available here. Open this page in desktop Chrome or Edge, over localhost or HTTPS.';
     }
