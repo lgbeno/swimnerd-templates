@@ -165,7 +165,6 @@
         for (const cell of cells) { const td = document.createElement('td'); td.textContent = cell.text ?? cell; if (cell.className) td.className = cell.className; tr.append(td); }
         return tr;
     };
-    const clockTime = at => at ? new Date(at).toLocaleTimeString() : '';
     function render() {
         // Timer box: only what the console sends.
         $('event').textContent = `${latest.event ?? '—'} / ${latest.heat ?? '—'}`;
@@ -174,18 +173,17 @@
         $('lanes').replaceChildren(...latest.lanes.map(lane => row([lane.lane, lane.place || '—',
             lane.time ? { text: lane.time, className: 'time' } : lane.followsClock && latest.clock ? { text: latest.clock, className: 'faint' } : '—'])));
         // Event data box: the selected start list, what arrived last, and how much is stored.
-        const entry = selected.event ? rosters.events.get(selected.event) : null, heat = entry?.heats[selected.heat - 1], info = entry?.info[selected.heat - 1];
+        const entry = selected.event ? rosters.events.get(selected.event) : null, heat = entry?.heats[selected.heat - 1];
         if (document.activeElement !== $('viewEventNo')) $('viewEventNo').value = selected.event ?? '';
         if (document.activeElement !== $('viewHeatNo')) $('viewHeatNo').value = selected.event ? selected.heat : '';
-        $('viewTitle').textContent = !selected.event ? (rosters.heats ? 'Step to an event, or type its number.' : 'No event data')
+        $('viewTitle').textContent = !selected.event ? (rosters.heats ? 'Step to an event, or type its number' : 'No event data')
             : !entry ? `Nothing stored for event ${selected.event}`
-            : (entry.title || 'No title') + (heat ? ` · heat ${selected.heat} of ${entry.heats.length} · ${info?.source || 'saved earlier'} ${clockTime(info?.at)}` : ` · heat ${selected.heat} not received`);
+            : heat ? entry.title || `Event ${selected.event}` : `${entry.title || `Event ${selected.event}`} · heat ${selected.heat} not received`;
         $('startList').replaceChildren(...(heat ? heat.map((a, i) => row([i + 1, GENSER.displayName(a.name) || '—', a.team || '—'])) : []));
-        $('lastReceived').textContent = lastStartList ? `Last received: event ${lastStartList.event} heat ${lastStartList.heat} · ${lastStartList.source} ${clockTime(lastStartList.at)}` : 'Nothing received in this visit';
+        $('storedEvents').textContent = rosters.events.size ? `${rosters.events.size} stored` : '';
+        $('heatCount').textContent = entry ? `of ${entry.heats.length}` : '';
         // The Show latest latch: lit while following, off while the user is looking at something else.
         $('follow').setAttribute('aria-pressed', String(following));
-        $('storedEvents').textContent = rosters.events.size;
-        $('storedHeats').textContent = `${plural(rosters.events.size, 'event')}, ${plural(rosters.heats, 'heat')}`;
         $('saveFiles').disabled = !rosters.events.size;
         const support = 'serial' in navigator;
         for (const [prefix, link] of [['timer', timer], ['genser', genser]]) {
