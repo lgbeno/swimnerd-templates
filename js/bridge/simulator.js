@@ -205,7 +205,8 @@
         const banner = root.document.createElement('p');
         banner.className = 'sim-banner'; banner.setAttribute('role', 'note');
         banner.textContent = 'Simulated serial ports. Both connect buttons open a made-up meet that repeats; nothing here comes from a timing console or Meet Manager.';
-        root.document.querySelector('header').after(banner);
+        const header = root.document.querySelector('header');
+        if (header) header.after(banner); else root.document.querySelector('main').prepend(banner);
     }
     const api = { MEET, TICK, LINEUP, AFTER, RESULTS, LINE_BUDGET, TimerSource, MeetManager, install, active: false };
     return api;
