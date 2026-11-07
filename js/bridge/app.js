@@ -15,6 +15,7 @@
     const parser = new GENSER.StreamParser();
     let decoder = new CTS6.Decoder(), latest = decoder.snapshot(0), timerStart = performance.now();
     let rosters = new GENSER.RosterStore(), lastRecord = null, lastRecordAt = null, saveTimer = null;
+    let lastStartList = null;   // the newest start list to arrive, from either source: { event, heat, title, lanes, source, at }
     let lastSent = '', lastSendAt = 0;
 
     const showError = e => { $('error').hidden = false; $('error').textContent = e.message || String(e); };
@@ -92,7 +93,10 @@
     }
     function onGenserChunk(chunk) {
         const now = performance.now(), records = parser.feed(chunk, now);
-        for (const record of records) { rosters.add(record, 'serial', Date.now()); lastRecord = record; lastRecordAt = now; }
+        for (const record of records) {
+            rosters.add(record, 'serial', Date.now()); lastRecord = record; lastRecordAt = now;
+            lastStartList = { event: record.event, heat: record.heat, title: record.title, lanes: record.lanes, source: 'serial', at: Date.now() };
+        }
         if (records.length) { saveRosters(); publish(); }
     }
     const genser = new SerialLink(onGenserChunk, () => parser.reset(), () => {});
@@ -107,6 +111,7 @@
                 if (file.size > 5 * 1024 * 1024) throw new Error('larger than 5 MB');
                 const roster = CTS6.parseSCB(new TextDecoder('windows-1252').decode(await file.arrayBuffer()));
                 rosters.addEvent(roster, file.name, at); events++; heats += roster.heats.length;
+                lastStartList = { event: roster.event, heat: roster.heats.length, title: roster.title, lanes: roster.heats.at(-1), source: file.name, at };
             } catch (e) { failed.push(`${file.name} (${e.message || e})`); }
         }
         if (events) { saveRosters(); lastSent = ''; publish(); }
@@ -132,19 +137,26 @@
     };
     const withPort = (text, prefix) => customised(prefix) ? text.replace(/\.$/, '') + customised(prefix) : text;
     const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+    const row = cells => {
+        const tr = document.createElement('tr');
+        for (const cell of cells) { const td = document.createElement('td'); td.textContent = cell.text ?? cell; if (cell.className) td.className = cell.className; tr.append(td); }
+        return tr;
+    };
+    const clockTime = at => at ? new Date(at).toLocaleTimeString() : '';
     function render() {
-        const roster = rosters.view().get(latest.event), heat = roster?.heats[latest.heat - 1];
+        // Timer box: only what the console sends.
         $('event').textContent = `${latest.event ?? '—'} / ${latest.heat ?? '—'}`;
-        $('title').textContent = roster?.title || (latest.event ? 'No start list for this event yet' : 'Waiting for the timer');
         $('clock').textContent = latest.clock || '—:—.—';
         $('raceState').textContent = latest.state === 'reset' ? 'RESET · INFERRED' : latest.state.toUpperCase();
-        $('lanes').replaceChildren(...latest.lanes.map((lane, i) => {
-            const tr = document.createElement('tr');
-            [lane.lane, heat?.[i]?.name || '—', heat?.[i]?.team || '—', lane.place || '—', lane.time || '—'].forEach(value => {
-                const td = document.createElement('td'); td.textContent = value; tr.append(td);
-            });
-            return tr;
-        }));
+        $('lanes').replaceChildren(...latest.lanes.map(lane => row([lane.lane, lane.place || '—',
+            lane.time ? { text: lane.time, className: 'time' } : lane.followsClock && latest.clock ? { text: latest.clock, className: 'faint' } : '—'])));
+        // Event data box: the newest start list, and how much is stored.
+        const last = lastStartList;
+        $('lastEvent').textContent = last ? `${last.event} / ${last.heat}` : '—';
+        $('lastTitle').textContent = last ? `${last.title || 'No title'} · ${last.source} ${clockTime(last.at)}` : 'Nothing received yet';
+        $('startList').replaceChildren(...(last ? last.lanes.map((a, i) => row([i + 1, GENSER.displayName(a.name) || '—', a.team || '—'])) : []));
+        $('storedEvents').textContent = rosters.events.size;
+        $('storedHeats').textContent = `${plural(rosters.events.size, 'event')}, ${plural(rosters.heats, 'heat')}`;
         const support = 'serial' in navigator;
         for (const [prefix, link] of [['timer', timer], ['genser', genser]]) {
             $(prefix + 'Connect').disabled = !support || link.connected || link.opening;
@@ -160,8 +172,7 @@
                 : parser.requests ? 'Connected · this is the scoreboard computer’s line, not Meet Manager’s. Move the tap to the other wire.'
                 : parser.bytes ? 'Connected · bytes arriving, no start list yet' : 'Connected · waiting for Meet Manager', 'genser');
         }
-        $('savedSummary').textContent = rosters.heats ? `${plural(rosters.heats, 'heat')} saved across ${plural(rosters.events.size, 'event')}` : 'No event data saved';
-        $('clearRosters').hidden = !rosters.heats;
+        $('clearRosters').hidden = !rosters.heats && !last;
         $('sourceStatus').textContent = (timer.connected ? 'Timer connected' : 'Timer not connected') + ' · ' + (genser.connected ? 'Event data connected' : 'Event data not connected');
     }
 
@@ -189,7 +200,7 @@
         [$(prefix + 'Baud'), $(prefix + 'Parity')].forEach(s => s.addEventListener('change', () => { saveSettings(); render(); }));
     }
     $('eventFiles').onchange = e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length) loadEventFiles(files); };
-    $('clearRosters').onclick = () => { rosters.clear(); lastRecord = null; $('eventFileStatus').textContent = ''; try { localStorage.removeItem(ROSTERS); } catch (e) { /* storage blocked */ } lastSent = ''; render(); };
+    $('clearRosters').onclick = () => { rosters.clear(); lastRecord = null; lastStartList = null; $('eventFileStatus').textContent = ''; try { localStorage.removeItem(ROSTERS); } catch (e) { /* storage blocked */ } lastSent = ''; render(); };
     if (!('serial' in navigator)) {
         $('timerStatus').textContent = $('genserStatus').textContent = 'Web Serial is not available here. Open this page in desktop Chrome or Edge, over localhost or HTTPS.';
     }
