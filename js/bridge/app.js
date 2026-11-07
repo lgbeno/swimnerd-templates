@@ -17,7 +17,7 @@
     let rosters = new GENSER.RosterStore(), lastRecord = null, lastRecordAt = null, saveTimer = null;
     let lastStartList = null;   // the newest start list to arrive, from either source: { event, heat, title, lanes, source, at }
     const selected = { event: null, heat: 1 };   // the start list shown in the Event data box
-    let following = true, steppedAwayAt = 0;     // the selection moves to each start list as it arrives, until the user steps away
+    let following = true;                        // the selection moves to each start list as it arrives, until the user steps away
     function arrived(event, heat, title, lanes, source, at) {
         lastStartList = { event, heat, title, lanes, source, at };
         if (following) { selected.event = event; selected.heat = heat; }
@@ -182,11 +182,8 @@
             : (entry.title || 'No title') + (heat ? ` · heat ${selected.heat} of ${entry.heats.length} · ${info?.source || 'saved earlier'} ${clockTime(info?.at)}` : ` · heat ${selected.heat} not received`);
         $('startList').replaceChildren(...(heat ? heat.map((a, i) => row([i + 1, GENSER.displayName(a.name) || '—', a.team || '—'])) : []));
         $('lastReceived').textContent = lastStartList ? `Last received: event ${lastStartList.event} heat ${lastStartList.heat} · ${lastStartList.source} ${clockTime(lastStartList.at)}` : 'Nothing received in this visit';
-        // The Latest latch: lit while following; when off, it flags a start list that arrived since the user stepped away.
-        const unseen = !following && !!lastStartList && lastStartList.at > steppedAwayAt && (lastStartList.event !== selected.event || lastStartList.heat !== selected.heat);
+        // The Show latest latch: lit while following, off while the user is looking at something else.
         $('follow').setAttribute('aria-pressed', String(following));
-        $('follow').classList.toggle('new', unseen);
-        $('follow').textContent = unseen ? 'New' : 'Latest';
         $('storedEvents').textContent = rosters.events.size;
         $('storedHeats').textContent = `${plural(rosters.events.size, 'event')}, ${plural(rosters.heats, 'heat')}`;
         $('saveFiles').disabled = !rosters.events.size;
@@ -236,7 +233,7 @@
     // Stepping the event goes through the events stored; typing a number shows that event, stored or not.
     const storedEvents = () => [...rosters.events.keys()].sort((a, b) => a - b);
     const heatsIn = event => rosters.events.get(event)?.heats.length || 1;
-    const pick = (event, heat) => { selected.event = event; selected.heat = Math.max(1, Math.min(heat, 99)); following = false; steppedAwayAt = Date.now(); render(); };
+    const pick = (event, heat) => { selected.event = event; selected.heat = Math.max(1, Math.min(heat, 99)); following = false; render(); };
     $('eventUp').onclick = () => { const next = storedEvents().find(e => e > (selected.event || 0)); if (next) pick(next, 1); };
     $('eventDown').onclick = () => { const prev = storedEvents().filter(e => e < (selected.event || Infinity)).pop(); if (prev) pick(prev, 1); };
     $('heatUp').onclick = () => { if (selected.event) pick(selected.event, Math.min(selected.heat + 1, heatsIn(selected.event))); };
@@ -246,7 +243,6 @@
     $('follow').onclick = () => {
         following = !following;
         if (following && lastStartList) { selected.event = lastStartList.event; selected.heat = lastStartList.heat; }
-        else steppedAwayAt = Date.now();
         render();
     };
     $('clearRosters').onclick = () => { rosters.clear(); lastRecord = null; lastStartList = null; selected.event = null; selected.heat = 1; following = true; $('eventFileStatus').textContent = ''; try { localStorage.removeItem(ROSTERS); } catch (e) { /* storage blocked */ } lastSent = ''; render(); };
