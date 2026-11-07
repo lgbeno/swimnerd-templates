@@ -110,6 +110,16 @@
         });
         return { event: Number(header[1]), title: header[2].trim(), heats: Array.from({ length: slots.length / 10 }, (_, i) => slots.slice(i * 10, i * 10 + 10)) };
     }
+    /** The inverse of parseSCB: one event as Meet Manager writes it, CRLF lines and 38-character slots
+     *  (name padded to 20, "--", team padded to 16). A heat that is missing is written as ten empty slots. */
+    function formatSCB({ event, title, heats }) {
+        const lines = ['#' + event + ' ' + (String(title || '').trim() || 'Event ' + event)];
+        for (const heat of heats) for (let i = 0; i < 10; i++) {
+            const a = (heat && heat[i]) || {};
+            lines.push(String(a.name || '').slice(0, 20).padEnd(20) + '--' + String(a.team || '').slice(0, 16).padEnd(16));
+        }
+        return lines.join('\r\n') + '\r\n';
+    }
     function csvRows(text) {
         const rows = []; let row = [], field = '', quoted = false;
         text = text.replace(/^\uFEFF/, '');
@@ -220,5 +230,5 @@
             })
         } };
     }
-    return { Decoder, Replay, Pacer, parseSCB, parseCapture, clockSteps, payload };
+    return { Decoder, Replay, Pacer, parseSCB, formatSCB, parseCapture, clockSteps, payload };
 });

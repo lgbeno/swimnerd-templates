@@ -16,6 +16,12 @@
     let decoder = new CTS6.Decoder(), latest = decoder.snapshot(0), timerStart = performance.now();
     let rosters = new GENSER.RosterStore(), lastRecord = null, lastRecordAt = null, saveTimer = null;
     let lastStartList = null;   // the newest start list to arrive, from either source: { event, heat, title, lanes, source, at }
+    const selected = { event: null, heat: 1 };   // the start list shown in the Event data box
+    let following = true;                        // the selection moves to each start list as it arrives, until the user steps away
+    function arrived(event, heat, title, lanes, source, at) {
+        lastStartList = { event, heat, title, lanes, source, at };
+        if (following) { selected.event = event; selected.heat = heat; }
+    }
     let lastSent = '', lastSendAt = 0;
 
     const showError = e => { $('error').hidden = false; $('error').textContent = e.message || String(e); };
@@ -95,7 +101,7 @@
         const now = performance.now(), records = parser.feed(chunk, now);
         for (const record of records) {
             rosters.add(record, 'serial', Date.now()); lastRecord = record; lastRecordAt = now;
-            lastStartList = { event: record.event, heat: record.heat, title: record.title, lanes: record.lanes, source: 'serial', at: Date.now() };
+            arrived(record.event, record.heat, record.title, record.lanes, 'serial', Date.now());
         }
         if (records.length) { saveRosters(); publish(); }
     }
@@ -111,12 +117,29 @@
                 if (file.size > 5 * 1024 * 1024) throw new Error('larger than 5 MB');
                 const roster = CTS6.parseSCB(new TextDecoder('windows-1252').decode(await file.arrayBuffer()));
                 rosters.addEvent(roster, file.name, at); events++; heats += roster.heats.length;
-                lastStartList = { event: roster.event, heat: roster.heats.length, title: roster.title, lanes: roster.heats.at(-1), source: file.name, at };
+                arrived(roster.event, 1, roster.title, roster.heats[0], file.name, at);
             } catch (e) { failed.push(`${file.name} (${e.message || e})`); }
         }
         if (events) { saveRosters(); lastSent = ''; publish(); }
         $('eventFileStatus').textContent = events ? `Loaded ${plural(events, 'event')}, ${plural(heats, 'heat')}.` : 'Nothing loaded.';
         if (failed.length) showError(new Error('Could not read ' + failed.slice(0, 5).join('; ') + (failed.length > 5 ? `; and ${failed.length - 5} more` : '')));
+        render();
+    }
+    /** Write every stored event to a folder as Meet Manager .scb files, E001.scb and so on. */
+    async function saveEventFiles() {
+        hideError();
+        if (typeof window.showDirectoryPicker !== 'function') { showError(new Error('Saving to a folder needs desktop Chrome or Edge.')); return; }
+        try {
+            const folder = await window.showDirectoryPicker({ mode: 'readwrite' });
+            let files = 0;
+            for (const entry of rosters.events.values()) {
+                const text = CTS6.formatSCB(entry);
+                const bytes = Uint8Array.from(text, ch => { const code = ch.charCodeAt(0); return code < 256 ? code : 0x3f; });   // windows-1252, as Meet Manager writes it
+                const handle = await folder.getFileHandle(`E${String(entry.event).padStart(3, '0')}.scb`, { create: true });
+                const writable = await handle.createWritable(); await writable.write(bytes); await writable.close(); files++;
+            }
+            $('eventFileStatus').textContent = files ? `Saved ${plural(files, 'file')} to ${folder.name}.` : 'Nothing to save.';
+        } catch (e) { if (e.name !== 'AbortError') showError(e); }
         render();
     }
 
@@ -150,13 +173,19 @@
         $('raceState').textContent = latest.state === 'reset' ? 'RESET · INFERRED' : latest.state.toUpperCase();
         $('lanes').replaceChildren(...latest.lanes.map(lane => row([lane.lane, lane.place || '—',
             lane.time ? { text: lane.time, className: 'time' } : lane.followsClock && latest.clock ? { text: latest.clock, className: 'faint' } : '—'])));
-        // Event data box: the newest start list, and how much is stored.
-        const last = lastStartList;
-        $('lastEvent').textContent = last ? `${last.event} / ${last.heat}` : '—';
-        $('lastTitle').textContent = last ? `${last.title || 'No title'} · ${last.source} ${clockTime(last.at)}` : 'Nothing received yet';
-        $('startList').replaceChildren(...(last ? last.lanes.map((a, i) => row([i + 1, GENSER.displayName(a.name) || '—', a.team || '—'])) : []));
+        // Event data box: the selected start list, what arrived last, and how much is stored.
+        const entry = selected.event ? rosters.events.get(selected.event) : null, heat = entry?.heats[selected.heat - 1], info = entry?.info[selected.heat - 1];
+        if (document.activeElement !== $('viewEventNo')) $('viewEventNo').value = selected.event ?? '';
+        if (document.activeElement !== $('viewHeatNo')) $('viewHeatNo').value = selected.event ? selected.heat : '';
+        $('viewTitle').textContent = !selected.event ? (rosters.heats ? 'Step to an event, or type its number.' : 'No event data')
+            : !entry ? `Nothing stored for event ${selected.event}`
+            : (entry.title || 'No title') + (heat ? ` · heat ${selected.heat} of ${entry.heats.length} · ${info?.source || 'saved earlier'} ${clockTime(info?.at)}` : ` · heat ${selected.heat} not received`);
+        $('startList').replaceChildren(...(heat ? heat.map((a, i) => row([i + 1, GENSER.displayName(a.name) || '—', a.team || '—'])) : []));
+        $('lastReceived').textContent = lastStartList ? `Last received: event ${lastStartList.event} heat ${lastStartList.heat} · ${lastStartList.source} ${clockTime(lastStartList.at)}` : 'Nothing received in this visit';
+        $('viewLatest').hidden = following || !lastStartList;
         $('storedEvents').textContent = rosters.events.size;
         $('storedHeats').textContent = `${plural(rosters.events.size, 'event')}, ${plural(rosters.heats, 'heat')}`;
+        $('saveFiles').disabled = !rosters.events.size;
         const support = 'serial' in navigator;
         for (const [prefix, link] of [['timer', timer], ['genser', genser]]) {
             $(prefix + 'Connect').disabled = !support || link.connected || link.opening;
@@ -172,7 +201,7 @@
                 : parser.requests ? 'Connected · this is the scoreboard computer’s line, not Meet Manager’s. Move the tap to the other wire.'
                 : parser.bytes ? 'Connected · bytes arriving, no start list yet' : 'Connected · waiting for Meet Manager', 'genser');
         }
-        $('clearRosters').hidden = !rosters.heats && !last;
+        $('clearRosters').disabled = !rosters.heats && !lastStartList;
     }
 
     // ---- settings ------------------------------------------------------------------------
@@ -199,7 +228,19 @@
         [$(prefix + 'Baud'), $(prefix + 'Parity')].forEach(s => s.addEventListener('change', () => { saveSettings(); render(); }));
     }
     $('eventFiles').onchange = e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length) loadEventFiles(files); };
-    $('clearRosters').onclick = () => { rosters.clear(); lastRecord = null; lastStartList = null; $('eventFileStatus').textContent = ''; try { localStorage.removeItem(ROSTERS); } catch (e) { /* storage blocked */ } lastSent = ''; render(); };
+    $('saveFiles').onclick = saveEventFiles;
+    // Stepping the event goes through the events stored; typing a number shows that event, stored or not.
+    const storedEvents = () => [...rosters.events.keys()].sort((a, b) => a - b);
+    const heatsIn = event => rosters.events.get(event)?.heats.length || 1;
+    const pick = (event, heat) => { selected.event = event; selected.heat = Math.max(1, Math.min(heat, 99)); following = false; render(); };
+    $('eventUp').onclick = () => { const next = storedEvents().find(e => e > (selected.event || 0)); if (next) pick(next, 1); };
+    $('eventDown').onclick = () => { const prev = storedEvents().filter(e => e < (selected.event || Infinity)).pop(); if (prev) pick(prev, 1); };
+    $('heatUp').onclick = () => { if (selected.event) pick(selected.event, Math.min(selected.heat + 1, heatsIn(selected.event))); };
+    $('heatDown').onclick = () => { if (selected.event) pick(selected.event, selected.heat - 1); };
+    $('viewEventNo').onchange = e => { const n = Math.floor(Number(e.target.value)); if (n >= 1 && n <= 999) pick(n, 1); else render(); };
+    $('viewHeatNo').onchange = e => { const n = Math.floor(Number(e.target.value)); if (selected.event && n >= 1) pick(selected.event, n); else render(); };
+    $('viewLatest').onclick = () => { following = true; if (lastStartList) { selected.event = lastStartList.event; selected.heat = lastStartList.heat; } render(); };
+    $('clearRosters').onclick = () => { rosters.clear(); lastRecord = null; lastStartList = null; selected.event = null; selected.heat = 1; following = true; $('eventFileStatus').textContent = ''; try { localStorage.removeItem(ROSTERS); } catch (e) { /* storage blocked */ } lastSent = ''; render(); };
     if (!('serial' in navigator)) {
         $('timerStatus').textContent = $('genserStatus').textContent = 'Web Serial is not available here. Open this page in desktop Chrome or Edge, over localhost or HTTPS.';
     }

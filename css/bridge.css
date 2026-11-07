@@ -4,3 +4,5 @@ h3{font-size:13px;margin:22px 0 4px;color:#edf4fb;letter-spacing:.3px}
 dialog{background:var(--card);color:#edf4fb;border:1px solid var(--line);border-radius:12px;padding:24px;max-width:480px}dialog::backdrop{background:rgba(0,0,0,.6)}dialog h3{margin-top:0}
 .readout{display:flex;gap:32px;flex-wrap:wrap;margin:18px 0 4px}.readout p{margin:0 0 4px}.readout strong{display:block;font:600 30px ui-monospace,monospace;font-variant-numeric:tabular-nums;line-height:1.2}
 .data{margin-top:8px}.data td,.data th{padding:7px 10px}.data td:nth-child(5){font:inherit;color:inherit}.data .time{font:600 15px ui-monospace,monospace;color:var(--accent)}.data .faint{color:var(--muted)}
+.stepper{display:flex;align-items:center;gap:4px}.stepper input{width:68px;background:#0c1620;color:#edf4fb;border:1px solid #3a4f63;border-radius:5px;padding:4px;font:600 24px ui-monospace,monospace;text-align:center;-moz-appearance:textfield}.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{display:none}.step{padding:8px 11px;font-size:16px;line-height:1}
+.readout .latest{align-self:flex-end}
