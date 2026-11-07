@@ -22,7 +22,7 @@
         lastStartList = { event, heat, title, lanes, source, at };
         if (following) { selected.event = event; selected.heat = heat; }
     }
-    let lastSent = '', lastSendAt = 0;
+    let lastSent = '', lastSendAt = 0, packets = 0, lastPacketAt = null, relayNote = '';
 
     const showError = e => { $('error').hidden = false; $('error').textContent = e.message || String(e); };
     const hideError = () => { $('error').hidden = true; };
@@ -150,7 +150,10 @@
         const serialized = JSON.stringify(data), now = performance.now();
         if (serialized === lastSent && now - lastSendAt < 1000) return;
         channel.postMessage(data); lastSent = serialized; lastSendAt = now;
+        if (relay.send(serialized)) { packets++; lastPacketAt = now; }
     }
+    // The overlay feed: a WebSocket relay that re-sends every packet to the overlays listening on it.
+    const relay = new BridgeLinks.RelayLink((state, message) => { relayNote = message; render(); });
 
     // ---- display -------------------------------------------------------------------------
     const serialSettings = prefix => ({ baudRate: Number($(prefix + 'Baud').value), dataBits: 8, stopBits: 1, parity: $(prefix + 'Parity').value, flowControl: 'none' });
@@ -185,6 +188,12 @@
         // The Show latest latch: lit while following, off while the user is looking at something else.
         $('follow').setAttribute('aria-pressed', String(following));
         $('saveFiles').disabled = !rosters.events.size;
+        // Overlay feed box.
+        $('relayConnect').disabled = relay.active; $('relayDisconnect').disabled = !relay.active; $('relaySettings').disabled = relay.active;
+        $('relayStatus').textContent = !relay.active ? 'Not connected.' : relay.open ? (timer.connected ? `Connected · ${relay.url}` : `Connected · ${relay.url} · waiting for the timer`) : relayNote || 'Connecting…';
+        $('packets').textContent = packets.toLocaleString();
+        $('lastSent').textContent = lastPacketAt === null ? '—' : `${Math.round((performance.now() - lastPacketAt) / 1000)} s ago`;
+        if ($('packetData').open) $('packetJson').textContent = lastSent ? JSON.stringify(JSON.parse(lastSent), null, 2) : 'No packet yet. Packets go out while the timer is connected and an event and heat are decoded.';
         $('eventsLoaded').textContent = rosters.events.size;
         $('heatsLoaded').textContent = rosters.heats ? plural(rosters.heats, 'heat') : 'no heats';
         $('lastNo').textContent = lastStartList ? `${lastStartList.event} / ${lastStartList.heat}` : '— / —';
@@ -207,7 +216,7 @@
     }
 
     // ---- settings ------------------------------------------------------------------------
-    const SAVED = ['timerBaud', 'timerParity', 'genserBaud', 'genserParity'];
+    const SAVED = ['timerBaud', 'timerParity', 'genserBaud', 'genserParity', 'relayUrl'];
     function saveSettings() {
         const s = {}; SAVED.forEach(id => s[id] = $(id).value);
         try { localStorage.setItem(SETTINGS, JSON.stringify(s)); } catch (e) { /* storage blocked */ }
@@ -232,6 +241,11 @@
     $('eventFiles').onchange = e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length) loadEventFiles(files); };
     $('saveFiles').onclick = saveEventFiles;
     $('timerView').onclick = () => $('timerData').showModal();
+    $('packetView').onclick = () => { $('packetData').showModal(); render(); };
+    $('relayConnect').onclick = () => { hideError(); try { relay.connect($('relayUrl').value); saveSettings(); } catch (e) { showError(e); } render(); };
+    $('relayDisconnect').onclick = () => relay.disconnect();
+    $('relaySettings').onclick = () => $('relayDialog').showModal();
+    $('relayUrl').addEventListener('change', saveSettings);
     $('eventView').onclick = () => $('eventData').showModal();
     // Stepping the event goes through the events stored; typing a number shows that event, stored or not.
     const storedEvents = () => [...rosters.events.keys()].sort((a, b) => a - b);

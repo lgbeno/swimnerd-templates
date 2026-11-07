@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Serial bridge · Swimnerd</title>
 <link rel="stylesheet" href="css/cts6.css"><link rel="stylesheet" href="css/bridge.css">
-<script defer src="js/cts6/decoder.js"></script><script defer src="js/bridge/genser.js"></script><script defer src="js/bridge/simulator.js"></script><script defer src="js/bridge/app.js"></script>
+<script defer src="js/cts6/decoder.js"></script><script defer src="js/bridge/genser.js"></script><script defer src="js/bridge/links.js"></script><script defer src="js/bridge/simulator.js"></script><script defer src="js/bridge/app.js"></script>
 </head>
 <body>
 <main>
@@ -34,6 +34,16 @@
 <dialog id="genserDialog"><form method="dialog"><h3>Meet Manager port settings</h3><p class="small">The scoreboard link runs at 9600 baud, 8 data bits, no parity, 1 stop bit, and the page uses that. Change it only for a link that was set up differently.</p>
 <div class="actions"><label>Baud <select id="genserBaud"><option>9600</option><option>4800</option><option>2400</option><option>1200</option></select></label><label>Parity <select id="genserParity"><option value="none">None</option><option value="even">Even</option><option value="odd">Odd</option></select></label><span class="small">8 data · 1 stop</span></div>
 <div class="actions"><button class="primary">Done</button><button id="genserDefaults" type="button">Back to the link’s settings</button></div></form></dialog></article>
+<article><h2><span>03</span> Overlay feed</h2>
+<div class="actions"><button id="relayConnect" class="primary">Connect</button><button id="relayDisconnect" disabled>Disconnect</button><button id="relaySettings" class="quiet">Address…</button></div>
+<p id="relayStatus" class="small">Not connected.</p>
+<div class="readout"><div><p class="eyebrow">PACKETS SENT</p><strong id="packets">0</strong></div><div><p class="eyebrow">LAST SENT</p><strong id="lastSent">—</strong></div></div>
+<div class="actions"><button id="packetView">View data</button></div>
+<dialog id="packetData" class="wide"><form method="dialog"><h3>Current packet</h3><pre id="packetJson" class="packet">No packet yet.</pre>
+<div class="actions"><button class="primary">Close</button></div></form></dialog>
+<dialog id="relayDialog"><form method="dialog"><h3>Overlay feed address</h3><p class="small">The WebSocket relay the overlays listen to. They connect to ws://localhost:8080/ on the OBS machine, so run the relay there and give its address here.</p>
+<div class="actions"><label>Address <input id="relayUrl" type="url" value="ws://localhost:8080/"></label></div>
+<div class="actions"><button class="primary">Done</button></div></form></dialog></article>
 </section>
 <p id="error" role="alert" hidden></p>
 </main><footer><a href="SerialBridge.html?simulate=1">Run with simulated ports</a></footer>
