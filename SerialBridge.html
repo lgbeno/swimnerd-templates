@@ -22,9 +22,8 @@
 <p id="genserStatus" class="small">Not connected.</p>
 <div class="actions"><label class="button">Load<input id="eventFiles" type="file" accept=".scb" multiple></label><button id="saveFiles">Save</button><button id="clearRosters">Clear</button><span id="eventFileStatus" class="small"></span></div>
 <div class="readout"><div><p class="eyebrow">EVENT</p><div class="stepper"><button id="eventDown" class="step" title="Previous stored event">−</button><input id="viewEventNo" type="number" min="1" max="999" aria-label="Event"><button id="eventUp" class="step" title="Next stored event">+</button></div></div>
-<div><p class="eyebrow">HEAT</p><div class="stepper"><button id="heatDown" class="step" title="Previous heat">−</button><input id="viewHeatNo" type="number" min="1" max="99" aria-label="Heat"><button id="heatUp" class="step" title="Next heat">+</button></div></div>
-<div><p class="eyebrow">STORED</p><strong id="storedEvents">0</strong><p id="storedHeats" class="small">events</p></div>
-<div class="latest"><button id="viewLatest" class="quiet" hidden>Show latest</button></div></div>
+<div><p class="eyebrow">HEAT</p><div class="stepper"><button id="heatDown" class="step" title="Previous heat">−</button><input id="viewHeatNo" type="number" min="1" max="99" aria-label="Heat"><button id="heatUp" class="step" title="Next heat">+</button><button id="follow" class="latch" aria-pressed="true" title="Show each start list as it arrives">Latest</button></div></div>
+<div><p class="eyebrow">STORED</p><strong id="storedEvents">0</strong><p id="storedHeats" class="small">events</p></div></div>
 <p id="viewTitle" class="small">No event data</p>
 <table class="data"><thead><tr><th>Lane</th><th>Swimmer / relay</th><th>Team</th></tr></thead><tbody id="startList"></tbody></table>
 <p id="lastReceived" class="small">Nothing received in this visit</p>
